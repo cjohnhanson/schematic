@@ -1,2 +1,5 @@
-# schematic
-Utilities for converting string data to SQL types
+# Schematic is a set of Python utilities for working with CSVs in Redshift
+
+##
+
+## 
