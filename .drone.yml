@@ -1,0 +1,15 @@
+kind: pipeline
+name: schematic
+steps:
+  - name: test
+    image: python:3.5.7-stretch
+    commands:
+      - python /drone/src/tests.py
+    when:
+      event:
+        - push
+trigger:
+  event:
+    - push
+    - pull_request
+  

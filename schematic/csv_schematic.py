@@ -4,7 +4,7 @@ from psycopg2 import sql
 from csv import DictReader
 
 class NameSqlMixin(object):
-    """Mixin to provide default to_sql behavior."""
+    """ Mixin to provide default to_sql behavior."""
 
     def to_sql(self):
         """Get the SQL identifier string for the object.
@@ -14,37 +14,7 @@ class NameSqlMixin(object):
         """
         return name
 
-class DictableMixin(object):
-    """Mixin to provide marshaling to and from dict"""
-
-    def to_dict(self):
-        """Create a dictionary from this object"""
-        return vars(self)
-
-    @classmethod
-    def from_dict(cls, class_dict, **kwargs):
-        """Instantiate from a dictionary
-        Args:
-          class_dict: the dictionary containing the data for the class
-          kwargs: additional keyword arguments required to instantiate this class
-        """
-        return cls(**{**class_dict, **kwargs})
-
-    def to_file(self, handler, format, append=True, overwrite=False):
-        """Persist this schema to a file.
-
-        Args:
-          handler: the file handler to write to
-          format: json or yaml
-          append: whether this table definition should be
-                  appended to the end of the existing config, if any
-          overwrite:  whether this table definition should be overwritten
-                  if it already exists in the existing config
-        """
-        # TODO
-        raise NotImplementedError
-
-class TableColumnType(NameSqlMixin, DictableMixin, object):
+class TableColumnType(NameSqlMixin, object):
     """Represents a type for a table column.
 
     Attributes:
@@ -70,7 +40,24 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         """
         raise NotImplementedError
 
-class TableColumn(NameSqlMixin, DictableMixin, object):
+    def get_next_less_restrictive_type(self):
+        """Get the TableColumnType which is less restrictive than this one.
+
+        The next less restrictive type is the TableColumnType
+        which is compatible with all the same values as this
+        and is also compatible with the smallest number of additional values.
+        E.g., in Redshift, a VARCHAR(MAX) would be the least restrictive type
+        of all.
+
+        Returns:
+          A TableColumnType that is next less restrictive.
+        Raises:
+          NotImplementedError
+        """
+        raise NotImplementedError
+
+
+class TableColumn(NameSqlMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
 
     Attributes:
@@ -83,7 +70,7 @@ class TableColumn(NameSqlMixin, DictableMixin, object):
         self.type = type
 
 
-class TableDefinition(DictableMixin, object):
+class TableDefinition(object):
     """DB-agnostic base class for storing info about a table
 
     Attributes:
@@ -119,6 +106,25 @@ class TableDefinition(DictableMixin, object):
         """
         raise NotImplementedError
 
+    def to_dict(self):
+        """Get a dictionary which contains all relevant information for this table"""
+        # TODO
+        raise NotImplementedError
+
+    def persist(self, handler, format, append=True, overwrite=False):
+        """Persist this schema to a file.
+
+        Args:
+          handler: the file handler to write to
+          format: json or yaml
+          append: whether this table definition should be
+                  appended to the end of the existing config, if any
+          overwrite:  whether this table definition should be overwritten
+                  if it already exists in the existing config
+        """
+        # TODO
+        raise NotImplementedError
+
     def identifier_string(self):
         """Get the string representation of the identifier for this table."""
         return self.name
@@ -145,47 +151,16 @@ class TableDefinition(DictableMixin, object):
         # TODO
         raise NotImplementedError
 
-class Schematic(DictableMixin, object):
-    """Implementation specifics for a type of database or warehouse
+class Schematic(object):
+    """Logic for a specific type of database or warehouse
     
     Attributes:
-      column_types: 2-D Array of TableColumnTypes
-      table_def: implementation of TableDefinition for this schematic
+      
     """
     def __init__(self):
-        
-        pass
-
-    def get_type(self, value, previous_type=None):
-        """Get what type of column the given value would be.
-        
-        Args:
-          value: the value to get the type for.
-          previous_type: the type that the column this value is in
-                         had previously been assigned
-        Returns:
-          A TableColumnType that the given value is compatible with.
-        """
         #TODO
-        raise NotImplementedError
 
-    def get_next_less_restrictive_type(self, column_type):
-        """Get the TableColumnType which is less restrictive than the one given
-
-        The next less restrictive type is the TableColumnType
-        which is compatible with all the same values as this
-        and is also compatible with the smallest number of additional values.
-        E.g., in Redshift, a VARCHAR(MAX) would be the least restrictive type
-        of all.
-        
-        Args:
-          column_type: The ColumnTableType to compare
-        Returns:
-          A TableColumnType that is next less restrictive.
-        Raises:
-          NotImplementedError
-        """
-        #TODO
-        raise NotImplementedError
-    
-    
+@click.group()
+def cli():
+    """Utilities for working with transforming data across different types of data warehouses"""
+    # TODO

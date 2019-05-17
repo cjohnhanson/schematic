@@ -1,3 +1,3 @@
-from .schematic import cli
+from schematic.schematic import *
+from schematic.cli import *
 
-__all__ = []
