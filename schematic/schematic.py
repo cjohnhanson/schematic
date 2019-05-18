@@ -2,59 +2,47 @@
 import click
 from psycopg2 import sql
 from csv import DictReader
-
-class NameSqlMixin(object):
-    """Mixin to provide default to_sql behavior."""
-
-    def to_sql(self):
-        """Get the SQL identifier string for the object.
-
-        Returns:
-          The name of the object
-        """
-        return name
-
-class DictableMixin(object):
-    """Mixin to provide marshaling to and from dict"""
-
-    def to_dict(self):
-        """Create a dictionary from this object"""
-        return vars(self)
-
-    @classmethod
-    def from_dict(cls, class_dict, **kwargs):
-        """Instantiate from a dictionary
-        Args:
-          class_dict: the dictionary containing the data for the class
-          kwargs: additional keyword arguments required to instantiate this class
-        """
-        return cls(**{**class_dict, **kwargs})
-
-    def to_file(self, handler, format, append=True, overwrite=False):
-        """Persist this schema to a file.
-
-        Args:
-          handler: the file handler to write to
-          format: json or yaml
-          append: whether this table definition should be
-                  appended to the end of the existing config, if any
-          overwrite:  whether this table definition should be overwritten
-                  if it already exists in the existing config
-        """
-        # TODO
-        raise NotImplementedError
+from schematic import NameSqlMixin, DictableMixin, NextLessRestrictiveCycleError
 
 class TableColumnType(NameSqlMixin, DictableMixin, object):
     """Represents a type for a table column.
 
+    The restrictivity of two different column types can be compared using
+    the built in comparison operators. For two TableColumnTypes, A and B,
+    if A is less restrictive than B, then A < B evaluates to True.
+
     Attributes:
       name: The name of the type
-      priority: The priority level of this type.
+      next_less_restrictive: the TableColumnType which is next less restrictive
     """
 
-    def __init__(self, name, priority):
+    def __init__(self, name, next_less_restrictive):
         self.name = name
-        self.priority = priority
+        self.next_less_restrictive = next_less_restrictive
+
+        #Make sure this type doesn't create a cycle in next_less_restrictive graph
+        nlr = self
+        while nlr:
+            nlr = nlr.next_less_restrictive
+            if nlr == self:
+                raise NextLessRestrictiveCycleError
+    
+    def __eq__(self, other):
+        if isinstance(other, TableColumnType) or issubclass(type(other), TableColumnType):
+            return self.name == other.name
+        else:
+            return other.__eq__(self)
+
+    def __lt__(self, other):
+        nlr = other
+        while nlr:
+            nlr = nlr.next_less_restrictive
+            if nlr == self:
+                return True
+        return False
+        
+    def __gt__(self, other):
+        return other < self
 
     def is_value_compatible(self, value):
         """Checks to see if the given value can be inserted into a column of this type.
@@ -78,7 +66,7 @@ class TableColumn(NameSqlMixin, DictableMixin, object):
       type: A TableColumnType instance with type information for the column.
     """
 
-    def __init__(self, name: str, type: TableColumnType):
+    def __init__(self, name, type):
         self.name = name
         self.type = type
 
@@ -94,25 +82,7 @@ class TableDefinition(DictableMixin, object):
     def __init__(self, name, columns):
         # TODO
         raise NotImplementedError
-
-    @classmethod
-    def from_csv(cls, csv_file, name=None):
-        """Create a TableDefinition based on a CSV file
-
-        Checks each row of the table and creates a TableDefinition
-        instance with column names based on the header row
-        and the most restrictive possible TableColumnType for each column.
-        Args:
-          csv_file: a file handler object for the CSV
-          name: a table name for this TableDefinition. Defaults to file's basename
-        Returns:
-          A TableDefinition instance.
-        Raises:
-          NotImplementedError
-        """
-        # TODO
-        raise NotImplementedError
-
+    
     def create_sql(self):
         """Generate a sql statement for creating a table based on this TableDefinition.
         Subclasses should implement this.
@@ -131,31 +101,22 @@ class TableDefinition(DictableMixin, object):
                     "Column with name {} already exists in TableDefinition {}".format(
                         column.name, self.identifier_string()))
 
-    @staticmethod
-    def guess_type(value, name=None, type_dict={}):
-        """The best guess as to what the type of this value would be in a SQL database.
-
-        Args:
-          value: The value to guess the type for
-          name: The name of the column this value is being inserted into, if any
-          type_dict: A dictionary of previous best guesses for what the type of the column referenced by name would be
-        Returns:
-          The best guess as to what the type of this value would be in a SQL database.
-        """
-        # TODO
-        raise NotImplementedError
-
 class Schematic(DictableMixin, object):
-    """Implementation specifics for a type of database or warehouse
+    """Interface for implementation specifics for a type of database or warehouse.
     
+    The TableColumnTypes in a given schematic form a tree with the most
+    restrictive types being leaf nodes and the least restrictive type
+    being the root node.
+
     Attributes:
-      column_types: 2-D Array of TableColumnTypes
+      name: Static attribute with the name of this schematic
+      most_restrictive_types: the leaf nodes of the restrictivity tree
       table_def: implementation of TableDefinition for this schematic
     """
-    def __init__(self):
+    name = 'schematic'
+    most_restrictive_types = []
+    table_def = TableDefinition
         
-        pass
-
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
         
@@ -166,26 +127,26 @@ class Schematic(DictableMixin, object):
         Returns:
           A TableColumnType that the given value is compatible with.
         """
-        #TODO
+        
         raise NotImplementedError
 
-    def get_next_less_restrictive_type(self, column_type):
-        """Get the TableColumnType which is less restrictive than the one given
-
-        The next less restrictive type is the TableColumnType
-        which is compatible with all the same values as this
-        and is also compatible with the smallest number of additional values.
-        E.g., in Redshift, a VARCHAR(MAX) would be the least restrictive type
-        of all.
+    def column_types(self):
+        """Iterate through column types in this Schematic
         
-        Args:
-          column_type: The ColumnTableType to compare
-        Returns:
-          A TableColumnType that is next less restrictive.
-        Raises:
-          NotImplementedError
+        Yields:
+          A TableColumnType
         """
         #TODO
         raise NotImplementedError
-    
-    
+
+    def column_type_from_name(self, name):
+        """Get the TableColumnTypeInstance described by the given name.
+        
+        Args:
+          name: The name, e.g. 'VARCHAR(256)'
+        
+        Returns:
+          A TableColumnTypeInstance
+        """
+        #TODO
+        raise NotImplementedError

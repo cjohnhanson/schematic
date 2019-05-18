@@ -3,17 +3,6 @@ import click
 from psycopg2 import sql
 from csv import DictReader
 
-class NameSqlMixin(object):
-    """ Mixin to provide default to_sql behavior."""
-
-    def to_sql(self):
-        """Get the SQL identifier string for the object.
-
-        Returns:
-          The name of the object
-        """
-        return name
-
 class TableColumnType(NameSqlMixin, object):
     """Represents a type for a table column.
 

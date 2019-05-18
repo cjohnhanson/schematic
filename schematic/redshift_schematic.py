@@ -1,9 +1,7 @@
 import schematic
 
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
-    """
-    Redshift-specific implementation of TableColumn
-    """
+    """Redshift-specific implementation of TableColumn"""
 
     def __init__(self, name, type, distkey, sortkey, encoding, notnull):
         super(RedshiftTableColumn, self).__init__(name, type)
@@ -16,9 +14,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
         return name
 
 class RedshiftVarcharType(schematic.TableColumnType):
-    """
-    A Varchar type in Redshift
-    """
+    """A Varchar type in Redshift"""
 
     def __init__(self, name, priority, max_len):
         super(RedshiftVarcharType, self).__init__(name, priority)
@@ -26,16 +22,15 @@ class RedshiftVarcharType(schematic.TableColumnType):
 
     def to_sql(self):
         return "VARCHAR ({})".format(self.max_len)
-
+    
     def is_value_compatible(value):
         # TODO
         raise NotImplementedError
 
 class RedshiftTableDefinition(schematic.TableDefinition):
-    """
-    Redshift-specific implementation of TableDefinition
-    """
+    """Redshift-specific implementation of TableDefinition"""
 
+    
     def __init__(self, schema, name, columns):
         self.sortkeys = []
         sk_dict = {}
@@ -50,9 +45,7 @@ class RedshiftTableDefinition(schematic.TableDefinition):
 
     @classmethod
     def from_connection(cls, conn, schema, name):
-        """
-        Instantiate from a redshift cursor
-        """
+        """Instantiate from a redshift cursor"""
         get_sql = """
         SET search_path TO {schemaname};
         SELECT
@@ -83,14 +76,16 @@ class RedshiftTableDefinition(schematic.TableDefinition):
                         notnull=notnull))
         return table_def
 
-    @staticmethod
-    def guess_type(value, name=None, type_dict={}):
-        """
-        :param value: The value to guess the type for
-        :param name: The name of the column this value is being inserted into, if any
-        :type name: str
-        :param type_dict: A dictionary of previous best guesses for what the type of the column referenced by name would be
-        :return: The best guess as to what the type of this value would be in a SQL database.
-        :rtype: str
-        """
-        # TODO
+class RedshiftSchematic(schematic.Schematic):
+    """Redshift-specific implementation of Schematic.
+
+    Attributes:
+      name: Static attribute with the name of this schematic
+      column_types: 2-D Array of TableColumnTypes
+      table_def: implementation of TableDefinition for this schematic
+    """
+    name = 'redshift'
+    column_types = [] #TODO
+    table_def = RedshiftTableDefinition
+
+
