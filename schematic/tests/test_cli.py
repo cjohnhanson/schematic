@@ -2,6 +2,7 @@ import schematic
 import unittest
 from click.testing import CliRunner
 
+
 class TestCLICommands(unittest.TestCase):
 
     def setUp(self):

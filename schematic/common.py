@@ -1,8 +1,10 @@
 import json
 import yaml
 
+
 class NextLessRestrictiveCycleError(Exception):
     pass
+
 
 class NameSqlMixin(object):
     """Mixin to provide default to_sql behavior."""
@@ -14,6 +16,7 @@ class NameSqlMixin(object):
           The name of the object
         """
         return self.name
+
 
 class DictableMixin(object):
     """Mixin to provide marshaling to and from dict"""
@@ -36,4 +39,3 @@ class DictableMixin(object):
             return self.to_dict() == other.to_dict()
         else:
             return False
-

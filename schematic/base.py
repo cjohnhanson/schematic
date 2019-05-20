@@ -4,6 +4,7 @@ from psycopg2 import sql
 from csv import DictReader
 from schematic import NameSqlMixin, DictableMixin, NextLessRestrictiveCycleError
 
+
 class TableColumnType(NameSqlMixin, DictableMixin, object):
     """Represents a type for a table column.
 
@@ -18,18 +19,22 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     Attributes:
       name: The name of the type
       next_less_restrictive: The TableColumnType which is next less restrictive
-      name_regex: A Regex matching all strings which are a valid 
+      name_regex: A Regex matching all strings which are a valid
                   string representation of this type
     """
     name = "TableColumnType"
     next_less_restrictive = None
     name_regex = None
-    
+
     def __repr__(self):
         return self.name
 
     def __eq__(self, other):
-        if isinstance(other, TableColumnType) or issubclass(type(other), TableColumnType):
+        if isinstance(
+                other,
+                TableColumnType) or issubclass(
+                type(other),
+                TableColumnType):
             return self.name == other.name
         else:
             print("Calling __eq_({}, {})".format(self, other))
@@ -42,7 +47,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
             if nlr == self:
                 return True
         return False
-        
+
     def __gt__(self, other):
         return other < self
 
@@ -60,6 +65,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         """
         raise NotImplementedError
 
+
 class TableColumn(NameSqlMixin, DictableMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
 
@@ -75,6 +81,7 @@ class TableColumn(NameSqlMixin, DictableMixin, object):
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
 
+
 class TableDefinition(DictableMixin, object):
     """DB-agnostic base class for storing info about a table
 
@@ -86,7 +93,7 @@ class TableDefinition(DictableMixin, object):
     def __init__(self, name, columns):
         self.name = name
         self.columns = columns
-    
+
     def create_sql(self):
         """Generate a sql statement for creating a table based on this TableDefinition.
         Subclasses should implement this.
@@ -112,11 +119,14 @@ class TableDefinition(DictableMixin, object):
             if col.name == column.name:
                 self.columns[i] = column
                 return
-        raise ValueError("No such column name {} in {}".format(column.name, self.name))
+        raise ValueError(
+            "No such column name {} in {}".format(
+                column.name, self.name))
+
 
 class Schematic(DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.
-    
+
     The TableColumnTypes in a given schematic form a tree with the most
     restrictive types being leaf nodes and the least restrictive type
     being the root node.
@@ -132,7 +142,7 @@ class Schematic(DictableMixin, object):
 
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
-        
+
         Args:
           value: the value to get the type for.
           previous_type: the type that the column this value is in
@@ -140,12 +150,12 @@ class Schematic(DictableMixin, object):
         Returns:
           A TableColumnType that the given value is compatible with.
         """
-        
+
         raise NotImplementedError
 
     def column_types(self):
         """Iterate through column types in this Schematic
-        
+
         Yields:
           A TableColumnType
         """
@@ -153,7 +163,7 @@ class Schematic(DictableMixin, object):
         for column_type in self.most_restrictive_types:
             nlr = column_type
             while nlr:
-                if not nlr.name in already_yielded:
+                if nlr.name not in already_yielded:
                     yield nlr.name
                     already_yielded.append(nlr.name)
                 nlr = nlr.next_less_restrictive
@@ -161,10 +171,10 @@ class Schematic(DictableMixin, object):
     def column_type_from_name(self, name):
         """Get the TableColumnTypeInstance described by the given name.
         Subclasses should implement this.
-        
+
         Args:
           name: The name, e.g. 'VARCHAR(256)'
-        
+
         Returns:
           A TableColumnType instance
         """

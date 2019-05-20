@@ -1,5 +1,6 @@
 import schematic
 
+
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """Redshift-specific implementation of TableColumn"""
 
@@ -13,17 +14,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     def identifier_string(self):
         return name
 
-class RedshiftCharType(schematic.TableColumnType):
-    """A Char type in Redshift"""
-    name = "RedshiftCharType"
-    next_less_restrictive = RedshiftVarcharType
 
-    def __init__(self, len):
-        self.len = len
-
-    def to_sql(self):
-        return "CHAR ({})".format(self.len)
-    
 class RedshiftVarcharType(schematic.TableColumnType):
     """A Varchar type in Redshift"""
     name = "RedshiftVarcharType"
@@ -35,14 +26,27 @@ class RedshiftVarcharType(schematic.TableColumnType):
 
     def to_sql(self):
         return "VARCHAR ({})".format(self.max_len)
-    
+
     def is_value_compatible(value):
         # TODO
         raise NotImplementedError
 
+
+class RedshiftCharType(schematic.TableColumnType):
+    """A Char type in Redshift"""
+    name = "RedshiftCharType"
+    next_less_restrictive = RedshiftVarcharType
+
+    def __init__(self, len):
+        self.len = len
+
+    def to_sql(self):
+        return "CHAR ({})".format(self.len)
+
+
 class RedshiftTableDefinition(schematic.TableDefinition):
     """Redshift-specific implementation of TableDefinition"""
-    
+
     def __init__(self, schema, name, columns):
         self.sortkeys = []
         sk_dict = {}
@@ -88,6 +92,7 @@ class RedshiftTableDefinition(schematic.TableDefinition):
                         notnull=notnull))
         return table_def
 
+
 class RedshiftSchematic(schematic.Schematic):
     """Redshift-specific implementation of Schematic.
 
@@ -97,7 +102,5 @@ class RedshiftSchematic(schematic.Schematic):
       table_def: implementation of TableDefinition for this schematic
     """
     name = 'redshift'
-    column_types = [] #TODO
+    column_types = []  # TODO
     table_def = RedshiftTableDefinition
-
-

@@ -1,11 +1,12 @@
 import unittest
-import schematic
+from schematic.schematics import RedshiftSchematic
 
 
 class TestRedshiftTableColumnType(unittest.TestCase):
     """
     Test all the methods for the redshift TableColumnType class
     """
+
 
 class TestRedshiftTableColumnMethods(unittest.TestCase):
     """
