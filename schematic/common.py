@@ -28,6 +28,12 @@ class DictableMixin(object):
         """
         return cls(**{**class_dict, **kwargs})
 
+    def __eq__(self, other):
+        if issubclass(type(other), DictableMixin):
+            return self.to_dict() == other.to_dict()
+        else:
+            return False
+
     def to_file(self, handler, format, overwrite=False):
         """Persist this schema to a file.
 

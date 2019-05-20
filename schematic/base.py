@@ -11,6 +11,10 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     the built in comparison operators. For two TableColumnTypes, A and B,
     if A is less restrictive than B, then A < B evaluates to True.
 
+    Note that TableColumnTypes are only fully comparable when in the
+    same subtree. If A is not found when traversing next_less_restrictive
+    in B and vice versa, A > B, A < B, and A == B all evaluate to False.
+
     Attributes:
       name: The name of the type
       next_less_restrictive: The TableColumnType which is next less restrictive
@@ -20,25 +24,29 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     name = "TableColumnType"
     next_less_restrictive = None
     name_regex = None
-    
-    def __init__(self):
-        #Make sure this type doesn't create a cycle in next_less_restrictive graph
-        nlr = self
-        while nlr:
-            nlr = nlr.next_less_restrictive
-            if nlr == self:
-                raise NextLessRestrictiveCycleError
-    
+    _nlr = next_less_restrictive
+
+    #If an implementation of this base class creates a cycle in the
+    #restrictivity tree, that implementation is invalid
+    while _nlr:
+        if name == _nlr.name:
+            raise NextLessRestrictiveCycleError
+        _nlr = _nlr.next_less_restrictive
+
+    def __repr__(self):
+        return self.name
+
     def __eq__(self, other):
         if isinstance(other, TableColumnType) or issubclass(type(other), TableColumnType):
             return self.name == other.name
         else:
-            return other.__eq__(self)
+            print("Calling __eq_({}, {})".format(self, other))
+            return False
 
     def __lt__(self, other):
         nlr = other
         while nlr:
-            nlr = nlr.next_less_restrictive
+            nlr = nlr.next_less_restrictive() if nlr.next_less_restrictive else None
             if nlr == self:
                 return True
         return False
@@ -72,6 +80,8 @@ class TableColumn(NameSqlMixin, DictableMixin, object):
         self.name = name
         self.type = type
 
+    def __repr__(self):
+        return "{}: {}".format(self.name, self.type)
 
 class TableDefinition(DictableMixin, object):
     """DB-agnostic base class for storing info about a table
@@ -82,8 +92,8 @@ class TableDefinition(DictableMixin, object):
     """
 
     def __init__(self, name, columns):
-        # TODO
-        raise NotImplementedError
+        self.name = name
+        self.columns = columns
     
     def create_sql(self):
         """Generate a sql statement for creating a table based on this TableDefinition.
@@ -102,9 +112,15 @@ class TableDefinition(DictableMixin, object):
                 raise ValueError(
                     "Column with name {} already exists in TableDefinition {}".format(
                         column.name, self.identifier_string()))
+        self.columns.append(column)
+
     def update_column(self, column):
         """Update the existing column with name column.name to the given column"""
-        #TODO
+        for i, col in enumerate(self.columns):
+            if col.name == column.name:
+                self.columns[i] = column
+                return
+        raise ValueError("No such column name {} in {}".format(column.name, self.name))
 
 class Schematic(DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.
@@ -120,8 +136,8 @@ class Schematic(DictableMixin, object):
     """
     name = 'schematic'
     most_restrictive_types = []
-    table_def = TableDefinition
-        
+    table_definition_class = TableDefinition
+    
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
         
@@ -141,8 +157,13 @@ class Schematic(DictableMixin, object):
         Yields:
           A TableColumnType
         """
-        #TODO
-        raise NotImplementedError
+        already_yielded = []
+        for column_type in self.most_restrictive_types:
+            nlr = column_type
+            while nlr:
+                if not nlr.name in already_yielded:
+                    yield nlr.name
+                nlr = nlr.next_less_restrictive
 
     def column_type_from_name(self, name):
         """Get the TableColumnTypeInstance described by the given name.
@@ -151,7 +172,7 @@ class Schematic(DictableMixin, object):
           name: The name, e.g. 'VARCHAR(256)'
         
         Returns:
-          A TableColumnTypeInstance
+          A TableColumnType instance
         """
-        #TODO
+        
         raise NotImplementedError

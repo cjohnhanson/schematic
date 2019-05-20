@@ -144,4 +144,4 @@ class TestSchematic(unittest.TestCase):
         yielded_column_types = frozenset([str(t) for t in MockSchematic().column_types()])
         self.assertEqual(all_column_types, yielded_column_types)
 
-    def test_
+    
