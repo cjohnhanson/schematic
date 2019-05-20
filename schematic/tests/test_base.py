@@ -4,7 +4,7 @@ import schematic
 class MockTableColumnType1(schematic.TableColumnType):
     name = "MockTableColumnType1"
     next_less_restrictive = None
-
+        
 class MockTableColumnType2(schematic.TableColumnType):
     name = "MockTableColumnType2"
     next_less_restrictive = MockTableColumnType1
@@ -22,7 +22,7 @@ class MockTableColumnType5(schematic.TableColumnType):
     next_less_restrictive = MockTableColumnType2
 
 class MockTableColumnType6(schematic.TableColumnType):
-    name = "MockTableColumnType5"
+    name = "MockTableColumnType6"
     next_less_restrictive = MockTableColumnType5
 
 class MockTableColumnType7(schematic.TableColumnType):
@@ -47,14 +47,6 @@ class TestTableColumnType(unittest.TestCase):
     """
     Test all the methods for the base TableColumnType class
     """
-    
-    def test_next_less_restrictive_tree_with_cycles_raises_error(self):
-        """
-        Implementation which would create a cycle should
-        raise NextLessRestrictiveCycleError
-        """
-        # TODO -- how to test this?
-        pass
 
     def test_lt_returns_true_when_less_restrictive(self):
         self.assertTrue(MockTableColumnType1() < MockTableColumnType8())
@@ -74,15 +66,17 @@ class TestTableColumnType(unittest.TestCase):
     def test_gt_returns_false_when_not_in_same_linked_list(self):
         self.assertFalse(MockTableColumnType8() > MockTableColumnType7())
 
+    def test_is_value_compatible_raises_notimplemented(self):
+        with self.assertRaises(NotImplementedError):
+            MockTableColumnType1().is_value_compatible('dummy')
+
 class TestTableColumnMethods(unittest.TestCase):
     """
     Test all methods for the base TableColumn class
     """
-    def test_can_instantiate(self):
-        try:
-            instance = schematic.TableColumn("TestTableColumn", MockTableColumnType1())
-        except Exception as e:
-            self.fail("TableColumn instantiation failed with error {}".format(e))
+    def test_repr(self):
+        self.assertEqual(str(schematic.TableColumn("TestColumn1", MockTableColumnType1())),
+                    "TestColumn1: MockTableColumnType1")
 
 class TestTableDefinitionMethods(unittest.TestCase):
     """
@@ -127,8 +121,8 @@ class TestSchematic(unittest.TestCase):
     """
     Test all the methods for the base Schematic class
     """
-    
-    def test_get_type_raises_not_implemented(self):
+
+    def test_get_type_raises_notimplemented(self):
         with self.assertRaises(NotImplementedError):
             schematic.Schematic().get_type("dummy")
     
@@ -143,5 +137,8 @@ class TestSchematic(unittest.TestCase):
                                       str(MockTableColumnType8())])
         yielded_column_types = frozenset([str(t) for t in MockSchematic().column_types()])
         self.assertEqual(all_column_types, yielded_column_types)
-
+        
+    def test_column_type_from_name_raises_notimplemented(self):
+        with self.assertRaises(NotImplementedError):
+            schematic.Schematic().column_type_from_name("dummy")
     

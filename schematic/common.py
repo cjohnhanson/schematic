@@ -1,3 +1,6 @@
+import json
+import yaml
+
 class NextLessRestrictiveCycleError(Exception):
     pass
 
@@ -10,7 +13,7 @@ class NameSqlMixin(object):
         Returns:
           The name of the object
         """
-        return name
+        return self.name
 
 class DictableMixin(object):
     """Mixin to provide marshaling to and from dict"""
@@ -34,15 +37,3 @@ class DictableMixin(object):
         else:
             return False
 
-    def to_file(self, handler, format, overwrite=False):
-        """Persist this schema to a file.
-
-        Args:
-          handler: the file handler to write to
-          format: json or yaml
-          overwrite:  whether this table definition should be overwritten
-                  if it already exists in the existing config
-        """
-        # TODO
-        raise NotImplementedError
-        

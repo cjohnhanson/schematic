@@ -23,8 +23,6 @@ class RedshiftCharType(schematic.TableColumnType):
 
     def to_sql(self):
         return "CHAR ({})".format(self.len)
-
-    
     
 class RedshiftVarcharType(schematic.TableColumnType):
     """A Varchar type in Redshift"""

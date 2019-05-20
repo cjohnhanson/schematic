@@ -24,15 +24,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     name = "TableColumnType"
     next_less_restrictive = None
     name_regex = None
-    _nlr = next_less_restrictive
-
-    #If an implementation of this base class creates a cycle in the
-    #restrictivity tree, that implementation is invalid
-    while _nlr:
-        if name == _nlr.name:
-            raise NextLessRestrictiveCycleError
-        _nlr = _nlr.next_less_restrictive
-
+    
     def __repr__(self):
         return self.name
 
@@ -137,7 +129,7 @@ class Schematic(DictableMixin, object):
     name = 'schematic'
     most_restrictive_types = []
     table_definition_class = TableDefinition
-    
+
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
         
@@ -163,10 +155,12 @@ class Schematic(DictableMixin, object):
             while nlr:
                 if not nlr.name in already_yielded:
                     yield nlr.name
+                    already_yielded.append(nlr.name)
                 nlr = nlr.next_less_restrictive
 
     def column_type_from_name(self, name):
         """Get the TableColumnTypeInstance described by the given name.
+        Subclasses should implement this.
         
         Args:
           name: The name, e.g. 'VARCHAR(256)'
@@ -174,5 +168,4 @@ class Schematic(DictableMixin, object):
         Returns:
           A TableColumnType instance
         """
-        
         raise NotImplementedError
