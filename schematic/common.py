@@ -28,14 +28,12 @@ class DictableMixin(object):
         """
         return cls(**{**class_dict, **kwargs})
 
-    def to_file(self, handler, format, append=True, overwrite=False):
+    def to_file(self, handler, format, overwrite=False):
         """Persist this schema to a file.
 
         Args:
           handler: the file handler to write to
           format: json or yaml
-          append: whether this table definition should be
-                  appended to the end of the existing config, if any
           overwrite:  whether this table definition should be overwritten
                   if it already exists in the existing config
         """

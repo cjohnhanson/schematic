@@ -13,11 +13,26 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     def identifier_string(self):
         return name
 
+class RedshiftCharType(schematic.TableColumnType):
+    """A Char type in Redshift"""
+    name = "RedshiftCharType"
+    next_less_restrictive = RedshiftVarcharType
+
+    def __init__(self, len):
+        self.len = len
+
+    def to_sql(self):
+        return "CHAR ({})".format(self.len)
+
+    
+    
 class RedshiftVarcharType(schematic.TableColumnType):
     """A Varchar type in Redshift"""
+    name = "RedshiftVarcharType"
+    next_less_restrictive = None
 
-    def __init__(self, name, priority, max_len):
-        super(RedshiftVarcharType, self).__init__(name, priority)
+    def __init__(self, max_len):
+        super(RedshiftVarcharType, self).__init__()
         self.max_len = max_len
 
     def to_sql(self):
@@ -29,7 +44,6 @@ class RedshiftVarcharType(schematic.TableColumnType):
 
 class RedshiftTableDefinition(schematic.TableDefinition):
     """Redshift-specific implementation of TableDefinition"""
-
     
     def __init__(self, schema, name, columns):
         self.sortkeys = []

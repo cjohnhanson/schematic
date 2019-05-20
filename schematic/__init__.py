@@ -1,4 +1,3 @@
-from schematic.common import *
-from schematic.schematic import *
-from schematic.cli import *
-
+from .common import *
+from .base import *
+from .cli import *

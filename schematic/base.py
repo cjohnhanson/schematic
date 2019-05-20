@@ -13,13 +13,15 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
 
     Attributes:
       name: The name of the type
-      next_less_restrictive: the TableColumnType which is next less restrictive
+      next_less_restrictive: The TableColumnType which is next less restrictive
+      name_regex: A Regex matching all strings which are a valid 
+                  string representation of this type
     """
-
-    def __init__(self, name, next_less_restrictive):
-        self.name = name
-        self.next_less_restrictive = next_less_restrictive
-
+    name = "TableColumnType"
+    next_less_restrictive = None
+    name_regex = None
+    
+    def __init__(self):
         #Make sure this type doesn't create a cycle in next_less_restrictive graph
         nlr = self
         while nlr:
@@ -100,6 +102,9 @@ class TableDefinition(DictableMixin, object):
                 raise ValueError(
                     "Column with name {} already exists in TableDefinition {}".format(
                         column.name, self.identifier_string()))
+    def update_column(self, column):
+        """Update the existing column with name column.name to the given column"""
+        #TODO
 
 class Schematic(DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.

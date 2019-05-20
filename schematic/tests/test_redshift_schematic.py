@@ -2,9 +2,9 @@ import unittest
 import schematic
 
 
-class TestTableColumnType(unittest.TestCase):
+class TestRedshiftTableColumnType(unittest.TestCase):
     """
-    Test all the methods for the base TableColumnType class
+    Test all the methods for the redshift TableColumnType class
     """
 
     def setUp(self):
@@ -59,16 +59,16 @@ class TestTableColumnType(unittest.TestCase):
         pass
 
 
-class TestTableColumnMethods(unittest.TestCase):
+class TestRedshiftTableColumnMethods(unittest.TestCase):
     """
-    Test all methods for the base TableColumn class
+    Test all methods for the redshift TableColumn class
     """
     pass
 
 
-class TestTableDefinitionMethods(unittest.TestCase):
+class TestRedshiftTableDefinitionMethods(unittest.TestCase):
     """
-    Test all the methods for the base TableDefinition class
+    Test all the methods for the redshift TableDefinition class
     """
 
     def test_create_sql(self):
@@ -96,9 +96,9 @@ class TestTableDefinitionMethods(unittest.TestCase):
         pass
 
 
-class TestSchematic(unittest.TestCase):
+class TestRedshiftSchematic(unittest.TestCase):
     """
-    Test all the methods for the base Schematic class
+    Test all the methods for the redshift Schematic class
     """
 
     def test_get_type_not_implemented(self):
