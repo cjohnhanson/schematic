@@ -51,22 +51,35 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     def __gt__(self, other):
         return other < self
 
-    def is_value_compatible(self, value):
-        """Checks to see if the given value can be inserted into a column of this type.
-
-        This should be implemented by subclasses with db-specific logic.
+    def is_value_compatible_with_instance(self, value):
+        """Checks to see if the given value can be inserted into a column of
+           the type described by this instance.
 
         Args:
           value: The value to check, a string
-        Returns:
-          True if this string could be inserted into a column of this type, else False
         Raises:
-          NotImplementedError
+          NotImplementedError: This should be implemented by subclasses.
         """
         raise NotImplementedError
 
+    def is_value_compatible_with_class(self, value):
+        """Checks to see if the given value can be inserted into a column of
+           the group of types described by this class.
+           
+           This is used, for example, to check if a value could 
+           fit into any VARCHAR class in a SQL database, whereas
+           is_value_compatible_with_instance would be used
+           to check if a value could fit into specifically
+           into a VARCHAR(256) class.
 
-class TableColumn(NameSqlMixin, DictableMixin, object):
+        Args:
+          value: The value to check, a string
+        Raises:
+          NotImplementedError: This should be implemented by subclasses.
+        """
+        raise NotImplementedError
+
+class TableColumn(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
 
     Attributes:
@@ -81,8 +94,7 @@ class TableColumn(NameSqlMixin, DictableMixin, object):
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
 
-
-class TableDefinition(DictableMixin, object):
+class TableDefinition(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a table
 
     Attributes:
@@ -97,24 +109,33 @@ class TableDefinition(DictableMixin, object):
     def create_sql(self):
         """Generate a sql statement for creating a table based on this TableDefinition.
         Subclasses should implement this.
+
+        Raises:
+          NotImplementedError
         """
         raise NotImplementedError
 
-    def identifier_string(self):
-        """Get the string representation of the identifier for this table."""
-        return self.name
-
     def add_column(self, column):
-        """Add a column to the column list."""
+        """Add a column to the column list.
+
+        Args:
+          column: A TableColumn instance to be added to this instance's columns.
+        """
         for col in self.columns:
             if col.name == column.name:
                 raise ValueError(
                     "Column with name {} already exists in TableDefinition {}".format(
-                        column.name, self.identifier_string()))
+                        column.name, self.name))
         self.columns.append(column)
 
     def update_column(self, column):
-        """Update the existing column with name column.name to the given column"""
+        """Update the existing column with name column.name to the given column.
+
+        Args:
+          column: A TableColumn instance to be added to this instance's columns.
+        Raises:
+          ValueError: If TableColumn with column.name does not exist in columns
+        """
         for i, col in enumerate(self.columns):
             if col.name == column.name:
                 self.columns[i] = column
@@ -142,13 +163,13 @@ class Schematic(DictableMixin, object):
 
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
-
+        
         Args:
           value: the value to get the type for.
           previous_type: the type that the column this value is in
                          had previously been assigned
-        Returns:
-          A TableColumnType that the given value is compatible with.
+        Raises:
+          NotImplementedError: This should be implemented by subclasses
         """
 
         raise NotImplementedError
@@ -170,12 +191,11 @@ class Schematic(DictableMixin, object):
 
     def column_type_from_name(self, name):
         """Get the TableColumnTypeInstance described by the given name.
-        Subclasses should implement this.
-
+        
         Args:
           name: The name, e.g. 'VARCHAR(256)'
-
-        Returns:
-          A TableColumnType instance
+        
+        Raises:
+          NotImplementedError: Subclasses should implement this.
         """
         raise NotImplementedError

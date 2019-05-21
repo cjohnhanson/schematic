@@ -77,9 +77,13 @@ class TestTableColumnType(unittest.TestCase):
     def test_gt_returns_false_when_not_in_same_linked_list(self):
         self.assertFalse(MockTableColumnType8() > MockTableColumnType7())
 
-    def test_is_value_compatible_raises_notimplemented(self):
+    def test_is_value_compatible_with_instance_raises_notimplemented(self):
         with self.assertRaises(NotImplementedError):
-            MockTableColumnType1().is_value_compatible('dummy')
+            MockTableColumnType1().is_value_compatible_with_instance('dummy')
+
+    def test_is_value_compatible_with_class_raises_notimplemented(self):
+        with self.assertRaises(NotImplementedError):
+            MockTableColumnType1().is_value_compatible_with_class('dummy')
 
 
 class TestTableColumnMethods(unittest.TestCase):
@@ -110,9 +114,9 @@ class TestTableDefinitionMethods(unittest.TestCase):
         with self.assertRaises(NotImplementedError):
             self.table_definition.create_sql()
 
-    def test_identifier_string_returns_name(self):
+    def test_to_sql_returns_name(self):
         self.assertEqual(
-            self.table_definition.identifier_string(),
+            self.table_definition.to_sql(),
             "TestTableDefinition")
 
     def test_add_new_column(self):

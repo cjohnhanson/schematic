@@ -1,6 +1,5 @@
 import schematic
 
-
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """Redshift-specific implementation of TableColumn"""
 
@@ -11,15 +10,17 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
         self.encoding = encoding
         self.notnull = notnull
 
-    def identifier_string(self):
-        return name
-
-
 class RedshiftVarcharType(schematic.TableColumnType):
-    """A Varchar type in Redshift"""
+    """A Varchar type in Redshift.
+    
+    Attributes:
+      max_len: int. The maximum length (in bytes) that can fit
+               in a column of this type.
+    """
     name = "RedshiftVarcharType"
     next_less_restrictive = None
-
+    name_regex = None #TODO
+    
     def __init__(self, max_len):
         super(RedshiftVarcharType, self).__init__()
         self.max_len = max_len
@@ -27,22 +28,413 @@ class RedshiftVarcharType(schematic.TableColumnType):
     def to_sql(self):
         return "VARCHAR ({})".format(self.max_len)
 
-    def is_value_compatible(value):
-        # TODO
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
         raise NotImplementedError
-
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
 
 class RedshiftCharType(schematic.TableColumnType):
     """A Char type in Redshift"""
     name = "RedshiftCharType"
     next_less_restrictive = RedshiftVarcharType
+    name_regex = None #TODO
 
     def __init__(self, len):
+        super(RedshiftCharType, self).__init__()
         self.len = len
 
     def to_sql(self):
         return "CHAR ({})".format(self.len)
 
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftBooleanType(schematic.TableColumnType):
+    """A boolean type in Redshift"""
+    name = "RedshiftBooleanType"
+    next_less_restrictive = RedshiftCharType
+    name_regex = None #TODO
+    
+    def __init__(self, len):
+        super(RedshiftCharType, self).__init__()
+        self.len = len
+
+    def to_sql(self):
+        return "BOOLEAN".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftTimestampType(schematic.TableColumnType):
+    """A timestamp type in Redshift"""
+    name = "RedshiftTimestampType"
+    next_less_restrictive = RedshiftCharType
+    name_regex = None #TODO
+    
+    def __init__(self, len):
+        super(RedshiftTimestampType, self).__init__()
+
+    def to_sql(self):
+        return "TIMESTAMP".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftTimestampType(schematic.TableColumnType):
+    """A timestamp type in Redshift"""
+    name = "RedshiftTimestampType"
+    next_less_restrictive = RedshiftVarcharType
+    name_regex = None #TODO
+    
+    def __init__(self, len):
+        super(RedshiftTimestampType, self).__init__()
+
+    def to_sql(self):
+        return "TIMESTAMP".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftTimestampTZType(schematic.TableColumnType):
+    """A Timestamp with time zone type in Redshift"""
+    name = "RedshiftTimestampTZType"
+    next_less_restrictive = RedshiftTimestampType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftTimestampTZType, self).__init__()
+
+    def to_sql(self):
+        return "TIMESTAMPTZ".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftBooleanType(schematic.TableColumnType):
+    """A boolean type in Redshift"""
+    name = "RedshiftBooleanType"
+    next_less_restrictive = RedshiftCharType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftCharType, self).__init__()
+
+    def to_sql(self):
+        return "BOOLEAN".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftDecimalType(schematic.TableColumnType):
+    """A decimal type in Redshift"""
+    name = "RedshiftDecimalType"
+    next_less_restrictive = RedshiftCharType
+    name_regex = None #TODO
+    
+    def __init__(self, precision, scale):
+        super(RedshiftDecimalType, self).__init__()
+        self.precision = precision
+        self.scale = scale
+
+    def to_sql(self):
+        return "DECIMAL({}, {})".format(self.precision, self.scale)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftDoublePrecisionType(schematic.TableColumnType):
+    """An double precision type in Redshift"""
+    name = "RedshiftDoublePrecisionType"
+    next_less_restrictive = RedshiftDecimalType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftDoublePrecisionType, self).__init__()
+
+    def to_sql(self):
+        return "DOUBLE PRECISION".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftFloatType(schematic.TableColumnType):
+    """An float type in Redshift"""
+    name = "RedshiftFloatType"
+    next_less_restrictive = RedshiftDoublePrecisionType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftFloatType, self).__init__()
+
+    def to_sql(self):
+        return "FLOAT".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftBigIntType(schematic.TableColumnType):
+    """An bigint type in Redshift"""
+    name = "RedshiftBigintType"
+    next_less_restrictive = RedshiftFloatType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftBigintType, self).__init__()
+
+    def to_sql(self):
+        return "BIGINT".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftIntType(schematic.TableColumnType):
+    """An int type in Redshift"""
+    name = "RedshiftIntType"
+    next_less_restrictive = RedshiftBigIntType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftIntType, self).__init__()
+
+    def to_sql(self):
+        return "INT".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+
+class RedshiftSmallIntType(schematic.TableColumnType):
+    """A smallint type in Redshift"""
+    name = "RedshiftSmallIntType"
+    next_less_restrictive = RedshiftIntType
+    name_regex = None #TODO
+    
+    def __init__(self):
+        super(RedshiftSmallIntType, self).__init__()
+
+    def to_sql(self):
+        return "SMALLINT".format(self.len)
+
+    def is_value_compatible_with_instance(self, value):
+        """Determine if value can be inserted into column of
+           type described by the instance.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
+    
+    def is_value_compatible_with_class(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+        
+        Args:
+          value: The value to check.
+        """
+        #TODO
+        raise NotImplementedError
 
 class RedshiftTableDefinition(schematic.TableDefinition):
     """Redshift-specific implementation of TableDefinition"""
