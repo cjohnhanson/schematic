@@ -138,7 +138,8 @@ class TestTableDefinitionMethods(unittest.TestCase):
 
     def test_create_table_raises_notimplemented(self):
         with self.assertRaises(NotImplementedError):
-            self.table_definition.create_table("dummy_arg", dummy_kwarg="dummy_kwarg")
+            self.table_definition.create_table(
+                "dummy_arg", dummy_kwarg="dummy_kwarg")
 
     def test_to_sql_returns_name(self):
         self.assertEqual(

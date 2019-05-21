@@ -86,8 +86,8 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     def is_value_compatible_with_class(self, value):
         """Checks to see if the given value can be inserted into a column of
            the group of types described by this class.
-           
-           This is used, for example, to check if a value could 
+
+           This is used, for example, to check if a value could
            fit into any VARCHAR class in a SQL database, whereas
            is_value_compatible_with_instance would be used
            to check if a value could fit into specifically
@@ -99,6 +99,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
           NotImplementedError: This should be implemented by subclasses.
         """
         raise NotImplementedError
+
 
 class TableColumn(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
@@ -114,6 +115,7 @@ class TableColumn(DictableMixin, NameSqlMixin, object):
 
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
+
 
 class TableDefinition(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a table
@@ -138,7 +140,7 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
     def create_table(self, *args, **kwargs):
         """Create the table in the destination
             specified in *args and **kwargs
-        
+
         Raises:
           NotImplementedError: Subclasses should implement this.
         """
@@ -192,7 +194,7 @@ class Schematic(DictableMixin, object):
 
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
-        
+
         Args:
           value: the value to get the type for.
           previous_type: the type that the column this value is in
@@ -220,10 +222,10 @@ class Schematic(DictableMixin, object):
 
     def column_type_from_name(self, name):
         """Get the TableColumnTypeInstance described by the given name.
-        
+
         Args:
           name: The name, e.g. 'VARCHAR(256)'
-        
+
         Raises:
           NotImplementedError: Subclasses should implement this.
         """
