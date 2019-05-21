@@ -1,4 +1,39 @@
+# -*- coding: utf-8 -*-
+# MIT License
+#
+# Copyright (c) 2019 Cody J. Hanson
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
+"""
+Implementation of the schematic.Schematic interface 
+with Redshift-specific logic and Schematic.TableColumnType 
+implementations.
+
+Based on Redshift documentation:
+- https://docs.aws.amazon.com/redshift/latest/dg/c_Supported_data_types.html
+
+TODO(Cody): Implement NCHAR and NVARCHAR types
+TODO(Cody): Implement BPCHAR and TEXT types
+"""
 import schematic
+from psycopg2 import sql
 
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """Redshift-specific implementation of TableColumn"""
@@ -14,19 +49,19 @@ class RedshiftVarcharType(schematic.TableColumnType):
     """A Varchar type in Redshift.
     
     Attributes:
-      max_len: int. The maximum length (in bytes) that can fit
+      max_bytes: int. The maximum length (in bytes) that can fit
                in a column of this type.
     """
     name = "RedshiftVarcharType"
     next_less_restrictive = None
     name_regex = None #TODO
     
-    def __init__(self, max_len):
+    def __init__(self, max_bytes):
         super(RedshiftVarcharType, self).__init__()
-        self.max_len = max_len
+        self.max_len = max_bytes
 
     def to_sql(self):
-        return "VARCHAR ({})".format(self.max_len)
+        return "VARCHAR ({})".format(self.max_bytes)
 
     def is_value_compatible_with_instance(self, value):
         """Determine if value can be inserted into column of
@@ -49,14 +84,18 @@ class RedshiftVarcharType(schematic.TableColumnType):
         raise NotImplementedError
 
 class RedshiftCharType(schematic.TableColumnType):
-    """A Char type in Redshift"""
+    """A Char type in Redshift.
+    
+    Attributes:
+      bytes: The number of bytes that can fit into a column of this type.
+    """
     name = "RedshiftCharType"
     next_less_restrictive = RedshiftVarcharType
     name_regex = None #TODO
 
-    def __init__(self, len):
+    def __init__(self, bytes):
         super(RedshiftCharType, self).__init__()
-        self.len = len
+        self.bytes = bytes
 
     def to_sql(self):
         return "CHAR ({})".format(self.len)
@@ -484,6 +523,33 @@ class RedshiftTableDefinition(schematic.TableDefinition):
                         notnull=notnull))
         return table_def
 
+    def create_sql(self):
+        """Generate a sql statement for creating a table based
+        on this RedshiftTableDefinition in Redshift
+       
+        Returns:
+          A psycopg2.sql.SQL object for creating a table based on this
+          RedshifttableDefinition in Redshift.
+        """
+        #TODO
+        raise NotImplementedError
+
+    def create_table(self, conn_or_curs):
+        """Create the table based on this
+        RedshiftTableDefinition in Redshift
+        
+        Args:
+          conn: A psycopg2.connection to a Redshift instance
+        Raises:
+          psycopg2.OperationalError: If there's a connection or transaction issue
+          psycopg2.ProgrammingError: If the table already exists
+        """
+        with conn.cursor() as curs:
+            try:
+                curs.execute(self.create_sql())
+            except:
+                conn.rollback()
+                raise
 
 class RedshiftSchematic(schematic.Schematic):
     """Redshift-specific implementation of Schematic.
@@ -496,3 +562,5 @@ class RedshiftSchematic(schematic.Schematic):
     name = 'redshift'
     column_types = []  # TODO
     table_def = RedshiftTableDefinition
+    MAX_VARCHAR_BYTES = 65535
+    
