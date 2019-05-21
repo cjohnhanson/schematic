@@ -17,6 +17,5 @@ setup(
         "boto3",
         "pyyaml",
         "psycopg2-binary",
-        "unittest2"
     ]
 )
