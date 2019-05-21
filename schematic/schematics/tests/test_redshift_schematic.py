@@ -31,8 +31,10 @@ VALUES_TO_TEST = dict(too_big_for_int8_positive_integer=9223372036854775808,
                       too_big_for_int2_negative_integer=-32768,
                       too_big_for_varchar_256_single_byte="TODO",
                       too_big_for_varchar_256_multi_byte="TODO",
+                      too_big_for_varchar_max_single_byte="TODO",
                       too_big_for_varchar_max_multi_byte="TODO",
-                      too_big_for_varchar_max_multi_byte="TODO",)
+                      too_big_for_char_256_single_byte="TODO",
+                      too_big_for_char_256_multi_byte="TODO",)
     
 class TestRedshiftTableColumnMethods(unittest.TestCase):
     """Test all methods for the RedshiftTableColumn class"""
@@ -50,6 +52,9 @@ class TestRedshiftVarcharTypeMethods(unittest.TestCase):
                          redshift_schematic.RedshiftVarcharType(256).to_sql())
         self.assertEqual("VARCHAR (2)",
                          redshift_schematic.RedshiftVarcharType(2).to_sql())
+
+    def test_instantiation_with_too_large_max_len_raises_valueerror(self):
+        self.fail("TODO")
 
     def test_is_value_compatible_with_instance_returns_true_when_not_too_long_single_byte_characters(self):
         self.fail("TODO")
@@ -74,7 +79,7 @@ class TestRedshiftVarcharTypeMethods(unittest.TestCase):
 
     def test_is_value_compatible_with_class_returns_false_when_too_long_multi_byte_characters(self):
         self.fail("TODO")
-    
+
 class TestRedshiftSchematic(unittest.TestCase):
     """Test all the methods for the redshift Schematic class"""
 
