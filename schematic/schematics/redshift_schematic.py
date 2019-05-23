@@ -57,20 +57,19 @@ class RedshiftVarcharType(schematic.TableColumnType):
     name = "RedshiftVarcharType"
     next_less_restrictive = None
     name_regex = None  # TODO
+    parameterized = True
 
-    def __init__(self, max_bytes):
-        super(RedshiftVarcharType, self).__init__()
-        if max_bytes == "MAX":
-            self.max_bytes = RedshiftSchematic.MAX_CHAR_BYTES
-        elif max_bytes > RedshiftSchematic.MAX_CHAR_BYTES:
+    def __init__(self, parameter=1):
+        super(RedshiftVarcharType, self).__init__(parameter)
+        if parameter == "MAX":
+            self.parameter = RedshiftSchematic.MAX_CHAR_BYTES
+        elif parameter > RedshiftSchematic.MAX_CHAR_BYTES:
             raise ValueError(
-                "Value too large for max_len. VARCHAR columns can have a length of at most {}".format(
+                "Value too large for parameter. VARCHAR columns can have a length of at most {}".format(
                     RedshiftSchematic.MAX_CHAR_BYTES))
-        else:
-            self.max_bytes = max_bytes
 
     def to_sql(self):
-        return "VARCHAR ({})".format(self.max_bytes)
+        return "VARCHAR ({})".format(self.parameter)
 
     def is_value_compatible_with_instance(self, value):
         """Determine if value can be inserted into column of
@@ -79,7 +78,7 @@ class RedshiftVarcharType(schematic.TableColumnType):
         Args:
           value: The value to check.
         """
-        return len(str(value).encode('utf-8')) <= self.max_bytes
+        return len(str(value).encode('utf-8')) <= self.parameter
 
     def is_value_compatible_with_class(self, value):
         """Determine if value can be inserted into column of
@@ -102,9 +101,8 @@ class RedshiftCharType(schematic.TableColumnType):
     next_less_restrictive = RedshiftVarcharType
     name_regex = None  # TODO
 
-    def __init__(self, bytes):
-        super(RedshiftCharType, self).__init__()
-        self.bytes = bytes
+    def __init__(self, parameter=1):
+        super(RedshiftCharType, self).__init__(parameter)
 
     def to_sql(self):
         return "CHAR ({})".format(self.len)
@@ -549,13 +547,13 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         on this RedshiftTableDefinition in Redshift
 
         Returns:
-          A psycopg2.sql.SQL object for creating a table based on this
-          RedshifttableDefinition in Redshift.
+          A psycopg2.sql.SQL object for creating a table in Redshift
+          based on this RedshiftTableDefinition.
         """
         # TODO
         raise NotImplementedError
 
-    def create_table(self, conn_or_curs):
+    def create_table(self, conn):
         """Create the table based on this
         RedshiftTableDefinition in Redshift
 
@@ -572,6 +570,16 @@ class RedshiftTableDefinition(schematic.TableDefinition):
                 conn.rollback()
                 raise
 
+    def get_rows(self, conn):
+        """Get the rows in this table.
+        Args:
+          conn: A psycopg2.connection to a Redshift instance
+        Raises:
+          psycopg2.OperationalError: If there's a connection or transaction issue
+          psycopg2.ProgrammingError: If the table already exists
+        """
+        raise NotImplementedError("TODO")
+
 
 class RedshiftSchematic(schematic.Schematic):
     """Redshift-specific implementation of Schematic.
@@ -582,7 +590,7 @@ class RedshiftSchematic(schematic.Schematic):
       table_def: implementation of TableDefinition for this schematic
     """
     name = 'redshift'
-    column_types = []  # TODO
+    column_types = []
     table_def = RedshiftTableDefinition
     MAX_VARCHAR_BYTES = 65535
     MAX_CHAR_BYTES = 65535

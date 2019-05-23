@@ -79,7 +79,7 @@ class TestRedshiftVarcharTypeMethods(unittest.TestCase):
 
     def test_instantiation_with_too_large_max_len_raises_valueerror(self):
         with self.assertRaises(ValueError):
-            redshift_schematic.RedshiftVarcharType(max_bytes=65536)
+            redshift_schematic.RedshiftVarcharType(65536)
 
     def test_is_value_compatible_with_instance_returns_true_when_not_too_long_single_byte_characters(
             self):
@@ -138,9 +138,4 @@ class TestRedshiftVarcharTypeMethods(unittest.TestCase):
 
 class TestRedshiftSchematic(unittest.TestCase):
     """Test all the methods for the redshift Schematic class"""
-
-    def test_get_type_not_implemented(self):
-        self.fail("TODO")
-
-    def test_column_types_yields_all(self):
-        self.fail("TODO")
+    pass

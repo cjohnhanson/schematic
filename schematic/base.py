@@ -23,6 +23,7 @@
 import click
 from psycopg2 import sql
 from csv import DictReader
+from queue import Queue
 from schematic import NameSqlMixin, DictableMixin, NextLessRestrictiveCycleError
 
 
@@ -42,10 +43,19 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
       next_less_restrictive: The TableColumnType which is next less restrictive
       name_regex: A Regex matching all strings which are a valid
                   string representation of this type
+      parameter: Instance parameter for this class. E.g., '256' for a VARCHAR(256)
     """
     name = "TableColumnType"
     next_less_restrictive = None
     name_regex = None
+    parameterized = False
+
+    def __init__(self, parameter=None):
+        if parameter is not None and not self.parameterized:
+            raise ValueError(
+                "{} is not a parameterized type.".format(
+                    self.name))
+        self.parameter = parameter
 
     def __repr__(self):
         return self.name
@@ -72,16 +82,38 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
     def __gt__(self, other):
         return other < self
 
+    def get_depth(self):
+        """Get the distance between this TableColumnType
+        and the least restrictive TableColumnType in its
+        next_less_restrictive linked list
+
+        Returns:
+          An int
+        """
+        depth = -1
+        nlr = self
+        while nlr:
+            nlr = nlr.next_less_restrictive
+            depth += 1
+        return depth
+
     def is_value_compatible_with_instance(self, value):
         """Checks to see if the given value can be inserted into a column of
            the type described by this instance.
 
         Args:
           value: The value to check, a string
+        Returns:
+          True if is_value_compatible_with_class(self, value) is True and
+          this type isn't parameterized
         Raises:
-          NotImplementedError: This should be implemented by subclasses.
+          NotImplementedError: This should be implemented by subclasses
+                               if subclasses are parameterized.
         """
-        raise NotImplementedError
+        if self.parameterized:
+            raise NotImplementedError
+        else:
+            return self.is_value_compatible_with_class(value)
 
     def is_value_compatible_with_class(self, value):
         """Checks to see if the given value can be inserted into a column of
@@ -99,6 +131,39 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
           NotImplementedError: This should be implemented by subclasses.
         """
         raise NotImplementedError
+
+    @staticmethod
+    def get_parameter_for_value(value):
+        """Get the parameter for a parameterized implementation
+           of this class that is required to fit the given value.
+
+        Args:
+          value: the value to return the parameter for.
+        Raises:
+          NotImplementedError: Subclasses should implement this.
+        """
+        raise NotImplementedError
+
+    @classmethod
+    def from_value(cls, value):
+        """Create an instance of this class that is compatible with value.
+
+        Args:
+          value: The value to return an instance for
+        Returns:
+          An instance of cls that can fit the value.
+        Raises:
+          ValueError: if value cannot fit in any instance of this class.
+        """
+        if cls.parameterized:
+            if not cls(parameter=None).is_value_compatible_with_class(value):
+                raise ValueError(
+                    "Value {} not compatible with any instance of {}".format(
+                        value, cls.name))
+            else:
+                return cls(parameter=cls.get_parameter_for_value(value))
+        else:
+            return cls()
 
 
 class TableColumn(DictableMixin, NameSqlMixin, object):
@@ -175,6 +240,17 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
             "No such column name {} in {}".format(
                 column.name, self.name))
 
+    def get_rows(self, *args, **kwargs):
+        """Generator for rows of the table described by this TableDefinition.
+
+        Args:
+          *args, **kwargs: DB-specific arguments for connection, e.g.,
+                           a psycopg2.connection or csv.DictReader object
+        Raises:
+          NotImplementedError: Subclasses should implement this.
+        """
+        raise NotImplementedError
+
 
 class Schematic(DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.
@@ -192,6 +268,26 @@ class Schematic(DictableMixin, object):
     most_restrictive_types = []
     table_definition_class = TableDefinition
 
+    def get_distance_from_leaf_node(self, column_type):
+        """Get the distance between the givenx TableColumnType
+        and its nearest leaf node.
+
+        Returns:
+          An int
+        """
+        distances = []
+        for ct in self.most_restrictive_types:
+            distance = 0
+            nlr = ct
+            while nlr:
+                if nlr == column_type:
+                    distances.append(distance)
+                    nlr = None
+                else:
+                    distance += 1
+                    nlr = nlr.next_less_restrictive
+        return min(distances)
+
     def get_type(self, value, previous_type=None):
         """Get what type of column the given value would be.
 
@@ -199,14 +295,33 @@ class Schematic(DictableMixin, object):
           value: the value to get the type for.
           previous_type: the type that the column this value is in
                          had previously been assigned
+        Returns:
+          TableColumnType that can fit the value and all values
+          of previous_type.
         Raises:
-          NotImplementedError: This should be implemented by subclasses
+          ValueError: if the given value can't fit into a column
+                      of any type in this Schematic
         """
-
-        raise NotImplementedError
+        if not previous_type:
+            depth_dict = {}
+            for column_type in self.column_types():
+                if column_type().is_value_compatible_with_class(value):
+                    depth_dict[column_type().get_depth()] = column_type
+            if depth_dict:
+                return depth_dict[max(depth_dict.keys())].from_value(value)
+        elif previous_type.is_value_compatible_with_instance(value):
+            return previous_type
+        elif previous_type.is_value_compatible_with_class(value):
+            return previous_type.__class__.from_value(value)
+        elif previous_type.next_less_restrictive:
+            return self.get_type(
+                value, previous_type=previous_type.next_less_restrictive())
+        raise ValueError(
+            "value {} cannot fit into a column of any type in Schematic {}".format(
+                value, self.name))
 
     def column_types(self):
-        """Iterate through column types in this Schematic
+        """Iterate through column types in this Schematic.
 
         Yields:
           A TableColumnType
@@ -216,7 +331,7 @@ class Schematic(DictableMixin, object):
             nlr = column_type
             while nlr:
                 if nlr.name not in already_yielded:
-                    yield nlr.name
+                    yield nlr
                     already_yielded.append(nlr.name)
                 nlr = nlr.next_less_restrictive
 

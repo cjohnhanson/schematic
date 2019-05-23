@@ -27,41 +27,85 @@ import schematic
 class MockTableColumnType1(schematic.TableColumnType):
     name = "MockTableColumnType1"
     next_less_restrictive = None
+    parameterized = True
+
+    def __init__(self, parameter=1):
+        super(MockTableColumnType1, self).__init__(parameter=parameter)
+
+    def is_value_compatible_with_instance(self, value):
+        if len(str(value)) > self.parameter:
+            return False
+        return True
+
+    def is_value_compatible_with_class(self, value):
+        return value != "BadValue"
+
+    def get_parameter_for_value(value):
+        return len(value)
 
 
 class MockTableColumnType2(schematic.TableColumnType):
     name = "MockTableColumnType2"
     next_less_restrictive = MockTableColumnType1
 
+    def is_value_compatible_with_class(self, value):
+        return False
+
 
 class MockTableColumnType3(schematic.TableColumnType):
     name = "MockTableColumnType3"
     next_less_restrictive = MockTableColumnType1
+
+    def is_value_compatible_with_class(self, value):
+        return value == "TestDeepest"
 
 
 class MockTableColumnType4(schematic.TableColumnType):
     name = "MockTableColumnType4"
     next_less_restrictive = MockTableColumnType1
 
+    def is_value_compatible_with_class(self, value):
+        return False
+
 
 class MockTableColumnType5(schematic.TableColumnType):
     name = "MockTableColumnType5"
     next_less_restrictive = MockTableColumnType2
+
+    def is_value_compatible_with_class(self, value):
+        return value == "TestDeepest"
 
 
 class MockTableColumnType6(schematic.TableColumnType):
     name = "MockTableColumnType6"
     next_less_restrictive = MockTableColumnType5
 
+    def is_value_compatible_with_class(self, value):
+        return False
+
 
 class MockTableColumnType7(schematic.TableColumnType):
     name = "MockTableColumnType7"
     next_less_restrictive = MockTableColumnType6
 
+    def is_value_compatible_with_class(self, value):
+        return False
+
 
 class MockTableColumnType8(schematic.TableColumnType):
     name = "MockTableColumnType8"
     next_less_restrictive = MockTableColumnType3
+
+    def is_value_compatible_with_class(self, value):
+        return False
+
+    def is_value_compatible_with_instance(self, value):
+        return False
+
+
+class MockTableColumnTypeParameterized(schematic.TableColumnType):
+    name = "MockTableColumnType9"
+    parameterized = True
 
 
 class MockTableDefinitionClass(schematic.TableDefinition):
@@ -76,7 +120,7 @@ class MockSchematic(schematic.Schematic):
     table_definition_class = MockTableDefinitionClass
 
 
-class TestTableColumnType(unittest.TestCase):
+class TestTableColumnTypeMethods(unittest.TestCase):
     """
     Test all the methods for the base TableColumnType class
     """
@@ -99,13 +143,72 @@ class TestTableColumnType(unittest.TestCase):
     def test_gt_returns_false_when_not_in_same_linked_list(self):
         self.assertFalse(MockTableColumnType8() > MockTableColumnType7())
 
-    def test_is_value_compatible_with_instance_raises_notimplemented(self):
-        with self.assertRaises(NotImplementedError):
-            MockTableColumnType1().is_value_compatible_with_instance('dummy')
+    def test_instantiation_with_parameter_raises_valueerror_non_parameterized(
+            self):
+        with self.assertRaises(ValueError):
+            MockTableColumnType2("dummy parameter")
 
-    def test_is_value_compatible_with_class_raises_notimplemented(self):
+    def test_is_value_compatible_with_instance_raises_notimplemented_base(
+            self):
         with self.assertRaises(NotImplementedError):
-            MockTableColumnType1().is_value_compatible_with_class('dummy')
+            schematic.TableColumnType().is_value_compatible_with_instance("dummy")
+
+    def test_is_value_compatible_with_instance_raises_notimplemented_parameterized(
+            self):
+        with self.assertRaises(NotImplementedError):
+            MockTableColumnTypeParameterized().is_value_compatible_with_instance("dummy")
+
+    def test_is_value_compatible_with_class_raises_notimplemented_base(self):
+        with self.assertRaises(NotImplementedError):
+            schematic.TableColumnType().is_value_compatible_with_class("dummy")
+
+    def test_is_value_compatible_with_instance_returns_true_parameterized(
+            self):
+        self.assertTrue(MockTableColumnType1(
+            6).is_value_compatible_with_instance('dummy'))
+
+    def test_is_value_compatible_with_instance_returns_true_not_parameterized(
+            self):
+        self.assertTrue(
+            MockTableColumnType3().is_value_compatible_with_instance("TestDeepest"))
+
+    def test_get_parameter_for_value_raises_notimplemented_base(self):
+        with self.assertRaises(NotImplementedError):
+            schematic.TableColumnType.get_parameter_for_value("dummy")
+
+    def test_is_value_compatible_with_instance_returns_false_parameterized(
+            self):
+        self.assertFalse(MockTableColumnType1(
+            3).is_value_compatible_with_instance('dummy'))
+
+    def test_is_value_compatible_with_class_returns_true_unrestrictive(self):
+        self.assertTrue(
+            MockTableColumnType1().is_value_compatible_with_class('dummy'))
+
+    def test_is_value_compatible_with_class_raises_valueerror_no_compatible_type(
+            self):
+        with self.assertRaises(ValueError):
+            MockTableColumnType1.from_value("BadValue")
+
+    def test_is_value_compatible_with_class_returns_class_unparameterized(
+            self):
+        self.assertEqual(
+            MockTableColumnType2(),
+            MockTableColumnType2.from_value("dummy"))
+
+    def test_get_depth_returns_correct_depth_0(self):
+        self.assertEqual(MockTableColumnType1().get_depth(), 0)
+
+    def test_get_depth_returns_correct_depth_1(self):
+        self.assertEqual(MockTableColumnType3().get_depth(), 1)
+
+    def test_get_depth_returns_correct_depth_gt_1(self):
+        self.assertEqual(MockTableColumnType8().get_depth(), 2)
+
+    def test_from_value_non_parameterized_returns_instance(self):
+        self.assertEqual(
+            MockTableColumnType1.from_value('dummy'),
+            MockTableColumnType1(6))
 
 
 class TestTableColumnMethods(unittest.TestCase):
@@ -169,29 +272,81 @@ class TestTableDefinitionMethods(unittest.TestCase):
         with self.assertRaises(ValueError):
             self.table_definition.update_column(new_column)
 
+    def test_get_rows_raises_notimplemented(self):
+        with self.assertRaises(NotImplementedError):
+            self.table_definition.get_rows(
+                "dummy_arg", dummy_kwarg="dummy_kwarg")
 
-class TestSchematic(unittest.TestCase):
+
+class TestSchematicMethods(unittest.TestCase):
     """
     Test all the methods for the base Schematic class
     """
 
-    def test_get_type_raises_notimplemented(self):
-        with self.assertRaises(NotImplementedError):
+    def test_get_type_raises_valueerror_for_base(self):
+        with self.assertRaises(ValueError):
             schematic.Schematic().get_type("dummy")
 
+    def test_get_type_raises_valueerror_when_no_match(self):
+        with self.assertRaises(ValueError):
+            MockSchematic().get_type("BadValue")
+
+    def test_get_type_returns_deepest(self):
+        self.assertEqual(MockSchematic().get_type("TestDeepest"),
+                         MockTableColumnType5())
+
+    def test_get_type_returns_new_instance_when_compatible_with_previous_type_class(
+            self):
+        self.assertEqual(
+            MockTableColumnType1(10),
+            MockSchematic().get_type(
+                "tenletter",
+                previous_type=MockTableColumnType1(6)))
+
+    def test_get_type_returns_new_class_when_incompatible_with_previous_type_class(
+            self):
+        self.assertEqual(
+            MockTableColumnType1(10),
+            MockSchematic().get_type(
+                "tenletter",
+                previous_type=MockTableColumnType8()))
+
+    def test_get_type_returns_previous_type_when_compatible(self):
+        self.assertEqual(
+            MockSchematic().get_type(
+                "TestDeepest",
+                previous_type=MockTableColumnType5()),
+            MockTableColumnType5())
+
+    def test_get_type_returns_least_restrictive_when_no_other_match(self):
+        self.assertEqual(MockSchematic().get_type("MatchNone"),
+                         MockTableColumnType1())
+
     def test_column_types_yields_all(self):
-        all_column_types = frozenset([str(MockTableColumnType1()),
-                                      str(MockTableColumnType2()),
-                                      str(MockTableColumnType3()),
-                                      str(MockTableColumnType4()),
-                                      str(MockTableColumnType5()),
-                                      str(MockTableColumnType6()),
+        all_column_types = frozenset([str(MockTableColumnType8()),
                                       str(MockTableColumnType7()),
-                                      str(MockTableColumnType8())])
+                                      str(MockTableColumnType6()),
+                                      str(MockTableColumnType5()),
+                                      str(MockTableColumnType4()),
+                                      str(MockTableColumnType3()),
+                                      str(MockTableColumnType2()),
+                                      str(MockTableColumnType1())])
         yielded_column_types = frozenset(
-            [str(t) for t in MockSchematic().column_types()])
+            [str(t()) for t in MockSchematic().column_types()])
         self.assertEqual(all_column_types, yielded_column_types)
 
-    def test_column_type_from_name_raises_notimplemented(self):
+    def test_column_type_from_name_raises_notimplemented_base(self):
         with self.assertRaises(NotImplementedError):
             schematic.Schematic().column_type_from_name("dummy")
+
+    def test_get_distance_from_leaf_node_returns_correct_distance_0(self):
+        self.assertEqual(
+            MockSchematic().get_distance_from_leaf_node(MockTableColumnType8), 0)
+
+    def test_get_distance_from_leaf_node_returns_correct_distance_1(self):
+        self.assertEqual(
+            MockSchematic().get_distance_from_leaf_node(MockTableColumnType6), 1)
+
+    def test_get_distance_from_leaf_node_returns_correct_distance_gt_1(self):
+        self.assertEqual(
+            MockSchematic().get_distance_from_leaf_node(MockTableColumnType5), 2)
