@@ -68,7 +68,6 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
                 TableColumnType):
             return self.name == other.name
         else:
-            print("Calling __eq_({}, {})".format(self, other))
             return False
 
     def __lt__(self, other):
@@ -156,7 +155,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
           ValueError: if value cannot fit in any instance of this class.
         """
         if cls.parameterized:
-            if not cls(parameter=None).is_value_compatible_with_class(value):
+            if not cls().is_value_compatible_with_class(value):
                 raise ValueError(
                     "Value {} not compatible with any instance of {}".format(
                         value, cls.name))
