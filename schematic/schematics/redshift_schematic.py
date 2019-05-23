@@ -34,6 +34,7 @@ TODO(Cody): Determine how/whether to handle NCHAR and NVARCHAR types
 TODO(Cody): Implement how/whether to handle BPCHAR and TEXT types
 """
 import schematic
+import re
 from psycopg2 import sql
 
 
@@ -165,11 +166,37 @@ class RedshiftBooleanType(schematic.TableColumnType):
         return value in self.valid_false_literals or value in self.valid_true_literals
 
 
-class RedshiftTimestampType(schematic.TableColumnType):
+class RedshiftAbstractDatetimeType(schematic.TableColumnType):
+    """Abstract datetime type to provide subclasses compatibility
+    checking logic.
+
+    Attributes:
+      valid_regex: Any valid value for columns of the subclass's
+                   type will match this regex
+    """
+    valid_regex = None
+
+    def is_value_compatible_with_class(self, value):
+        """Check to see if a given value could be
+        inserted into a column of this type.
+
+        Args:
+          value: The value to check
+        Returns:
+          boolean indicating whether or not the value
+          is compatible
+        """
+        return bool(self.valid_regex.match(value))
+
+
+class RedshiftTimestampType(RedshiftAbstractDatetimeType):
     """A timestamp type in Redshift"""
     name = "RedshiftTimestampType"
     next_less_restrictive = RedshiftVarcharType
     parameterized = False
+    valid_regexes = [
+        "(^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1])$)"]
+    valid_regex = re.compile("|".join(valid_regexes))
 
     def __init__(self):
         super(RedshiftTimestampType, self).__init__()
@@ -177,32 +204,15 @@ class RedshiftTimestampType(schematic.TableColumnType):
     def to_sql(self):
         return "TIMESTAMP".format(self.len)
 
-    def is_value_compatible_with_instance(self, value):
-        """Determine if value can be inserted into column of
-           type described by the instance.
 
-        Args:
-          value: The value to check.
-        """
-        # TODO
-        raise NotImplementedError
-
-    def is_value_compatible_with_class(self, value):
-        """Determine if value can be inserted into column of
-           the group of types described by the class.
-
-        Args:
-          value: The value to check.
-        """
-        # TODO
-        raise NotImplementedError
-
-
-class RedshiftTimestampTZType(schematic.TableColumnType):
+class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
     """A Timestamp with time zone type in Redshift"""
     name = "RedshiftTimestampTZType"
     next_less_restrictive = RedshiftTimestampType
     parameterized = False
+    valid_regexes = [
+        "(^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1])$)"]
+    valid_regex = re.compile("|".join(valid_regexes))
 
     def __init__(self):
         super(RedshiftTimestampTZType, self).__init__()
@@ -210,58 +220,24 @@ class RedshiftTimestampTZType(schematic.TableColumnType):
     def to_sql(self):
         return "TIMESTAMPTZ".format(self.len)
 
-    def is_value_compatible_with_instance(self, value):
-        """Determine if value can be inserted into column of
-           type described by the instance.
 
-        Args:
-          value: The value to check.
-        """
-        # TODO
-        raise NotImplementedError
-
-    def is_value_compatible_with_class(self, value):
-        """Determine if value can be inserted into column of
-           the group of types described by the class.
-
-        Args:
-          value: The value to check.
-        """
-        # TODO
-        raise NotImplementedError
-
-
-class RedshiftDateType(schematic.TableColumnType):
+class RedshiftDateType(RedshiftAbstractDatetimeType):
     """A DATE type in Redshift"""
     name = "RedshiftDateType"
     next_less_restrictive = RedshiftTimestampTZType
     parameterized = False
+    valid_regexes = [
+        "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1])$",
+        "(today)",
+        "(tomorrow)",
+        "(yesterday)"]
+    valid_regex = re.compile("|".join(valid_regexes))
 
     def __init__(self):
         super(RedshiftDateType, self).__init__()
 
     def to_sql(self):
         return "DATE".format(self.len)
-
-    def is_value_compatible_with_instance(self, value):
-        """Determine if value can be inserted into column of
-           type described by the instance.
-
-        Args:
-          value: The value to check.
-        """
-        # TODO
-        raise NotImplementedError
-
-    def is_value_compatible_with_class(self, value):
-        """Determine if value can be inserted into column of
-           the group of types described by the class.
-
-        Args:
-          value: The value to check.
-        """
-        # TODO
-        raise NotImplementedError
 
 
 class RedshiftAbstractDecimalType(schematic.TableColumnType):
@@ -400,7 +376,17 @@ class RedshiftFloatType(RedshiftAbstractDecimalType):
 
 
 class RedshiftAbstractIntType(schematic.TableColumnType):
+    """Abstract int type to provide subclasses compatibility
+    checking logic.
+
+    Attributes:
+      min_value: Total number of digits that can fit into a column of this type.
+      max_value: Number of digits to right of the decimal point that can
+                 fit into a column of this type.
+    """
     parameterized = False
+    min_value = None
+    max_value = None
 
     def is_value_compatible_with_class(self, value):
         """Determine if value can be inserted into column of
@@ -560,8 +546,8 @@ class RedshiftSchematic(schematic.Schematic):
     name = 'redshift'
     most_restrictive_types = [RedshiftVarcharType,
                               RedshiftBooleanType,
-                              RedshiftSmallIntType, ]
-#                              RedshiftDateType]
+                              RedshiftSmallIntType,
+                              RedshiftDateType]
     table_def = RedshiftTableDefinition
     MAX_VARCHAR_BYTES = 65535
     MAX_CHAR_BYTES = 65535

@@ -51,17 +51,13 @@ class TestRedshiftTableDefinitionMethods(unittest.TestCase):
     """Test all the methods for the RedshiftTableDefinition class"""
 
     def test_can_instantiate_redshift_table_column(self):
-        try:
-            RedshiftTableColumn(
-                name='test',
-                column_type=RedshiftVarcharType(256),
-                distkey=True,
-                sortkey=1,
-                encoding='LZO',
-                notnull=False)
-        except Exception as e:
-            self.fail(
-                "RedshiftTableColumn instantiation failed with error {}".format(e))
+        RedshiftTableColumn(
+            name='test',
+            column_type=RedshiftVarcharType(256),
+            distkey=True,
+            sortkey=1,
+            encoding='LZO',
+            notnull=False)
 
 
 class TestRedshiftVarcharTypeMethods(unittest.TestCase):
@@ -233,3 +229,20 @@ class TestRedshiftSchematic(unittest.TestCase):
             RedshiftDecimalType(
                 (17,
                  17)))
+
+    def test_get_type_returns_date_no_previous_type(self):
+        self.assertEqual(
+            RedshiftSchematic().get_type(
+                "2019-06-22"),
+            RedshiftDateType())
+        self.assertEqual(
+            RedshiftSchematic().get_type(
+                "today"),
+            RedshiftDateType())
+
+    def test_get_type_returns_timestamptz_previous_type_date(self):
+        self.assertEqual(
+            RedshiftSchematic().get_type("2019 - 06 - 22
+
+    def test_get_type_returns_timestamp_previous_type_date(self):
+        self.fail("TODO")
