@@ -173,9 +173,9 @@ class TableColumn(DictableMixin, NameSqlMixin, object):
       type: A TableColumnType instance with type information for the column.
     """
 
-    def __init__(self, name, type):
+    def __init__(self, name, column_type):
         self.name = name
-        self.type = type
+        self.type = column_type
 
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
