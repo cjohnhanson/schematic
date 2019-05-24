@@ -1,0 +1,14 @@
+kind: pipeline
+name: schematic
+steps:
+  - name: garage_test
+    image: python3:latest
+    commands:
+      - pytest --cov=schematic --cov-fail-under=90
+    when:
+      event:
+        - push
+trigger:
+  event:
+    - push
+    - pull_request
