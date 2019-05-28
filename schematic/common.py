@@ -57,7 +57,7 @@ class DictableMixin(object):
         return cls(**{**class_dict, **kwargs})
 
     def __eq__(self, other):
-        if issubclass(type(other), DictableMixin):
+        if type(self) == type(other):
             return self.to_dict() == other.to_dict()
         else:
             return False

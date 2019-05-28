@@ -66,7 +66,10 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
                 TableColumnType) or issubclass(
                 type(other),
                 TableColumnType):
-            return self.name == other.name
+            if self.parameterized and other.parameterized:
+                return self.name == other.name and self.parameter == other.parameter
+            else:
+                return self.name == other.name
         else:
             return False
 
@@ -344,3 +347,38 @@ class Schematic(DictableMixin, object):
           NotImplementedError: Subclasses should implement this.
         """
         raise NotImplementedError
+
+def _get_subclasses_helper(schematic_class):
+    """Get all the subclasses of the given class.
+    
+    Args:
+      schematic_class: the class to get subclasses for
+    Yields:
+      A subclass of the given schematic, or the given 
+      schematic if it has no subclasses.
+    """
+    for subclass in schematic_class.__subclasses__():
+        for subsub in _get_subclasses_helper(subclass):
+            yield subsub
+    yield schematic_class
+        
+def get_all_schematics():
+    """Get all the subclasses of Schematic.
+    Yields:
+      A subclass of Schematic.
+    """
+    for schematic_class in _get_subclasses_helper(Schematic):
+        yield schematic_class
+
+def get_schematic_by_name(name):
+    """Get Schematic implementation for the given name
+    
+    Args:
+      name: The name of the Schematic implementation to return
+    Returns:
+      A Schematic implementation
+    """
+    for schematic_class in get_all_schematics():
+        if schematic_class.name == name:
+            return schematic_class
+

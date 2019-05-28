@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import unittest
+import re
 from schematic.schematics.redshift_schematic import *
 
 VALUES_TO_TEST = dict(
@@ -44,12 +45,6 @@ VALUES_TO_TEST = dict(
 
 class TestRedshiftTableColumnMethods(unittest.TestCase):
     """Test all methods for the RedshiftTableColumn class"""
-    pass
-
-
-class TestRedshiftTableDefinitionMethods(unittest.TestCase):
-    """Test all the methods for the RedshiftTableDefinition class"""
-
     def test_can_instantiate_redshift_table_column(self):
         RedshiftTableColumn(
             name='test',
@@ -59,6 +54,45 @@ class TestRedshiftTableDefinitionMethods(unittest.TestCase):
             encoding='LZO',
             notnull=False)
 
+class TestRedshiftTableDefinitionMethods(unittest.TestCase):
+    """Test all the methods for the RedshiftTableDefinition class"""
+    def test_can_instantiate_redshift_table_definition(self):
+        RedshiftTableDefinition(
+            schema="test_schema",
+            name="test_name",
+            columns=[RedshiftTableColumn("test_column1",
+                                         RedshiftVarcharType(256),
+                                         distkey=False,
+                                         sortkey=2,
+                                         encoding="LZO",
+                                         notnull=False),
+                     RedshiftTableColumn("test_column2",
+                                         RedshiftDateType(),
+                                         distkey=True)])
+
+    def test_can_instantiate_from_connection(self):
+        self.fail("TODO")
+
+    def test_column_create_sql_no_encoding(self):
+        self.fail("TODO")
+
+    def test_column_create_sql_with_encoding(self):
+        self.fail("TODO")
+
+    def test_create_sql_no_distkey_or_sortkey(self):
+        self.fail("TODO")
+
+    def test_create_sql_sortkey_and_distkey(self):
+        self.fail("TODO")
+
+    def test_create_table_successfully_creates(self):
+        self.fail("TODO")
+    
+    def test_create_table_raises_programming_error_if_exists(self):
+        self.fail("TODO")
+
+    def test_get_rows_yields_rows(self):
+        self.fail("TODO")
 
 class TestRedshiftVarcharTypeMethods(unittest.TestCase):
     """Test all the methods for the RedshiftVarcharType class"""
@@ -142,8 +176,85 @@ class TestRedshiftCharTypeMethods(unittest.TestCase):
 
     def test_is_value_compatible_with_instance_returns_false_multibyte(self):
         self.assertFalse(RedshiftCharType(
-            5).is_value_compatible_with_class('字abc'))
+            5).is_value_compatible_with_instance('字abc'))
+        
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual(RedshiftCharType(5).to_sql(),
+                         'CHAR (5)')
 
+class TestRedshiftBooleanTypeMethods(unittest.TestCase):
+    """Test all the methods of the RedshiftBooleanType class"""
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual(RedshiftBooleanType().to_sql(),
+                         "BOOLEAN")
+
+class TestRedshiftTimestampTypeMethods(unittest.TestCase):
+    """Test all the methods of the RedshiftBooleanType class"""
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual(RedshiftTimestampType().to_sql(),
+                         "TIMESTAMP")
+
+class TestRedshiftTimestampTZTypeMethods(unittest.TestCase):
+    """Test all the methods of the RedshiftBooleanType class"""
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual(RedshiftTimestampTZType().to_sql(),
+                         "TIMESTAMPTZ")
+
+class TestRedshiftTimestampDateMethods(unittest.TestCase):
+    """Test all the methods of the RedshiftBooleanType class"""
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual(RedshiftDateType().to_sql(),
+                         "DATE")
+
+class TestRedshiftDecimalTypeMethods(unittest.TestCase):
+    """Test all the methods of the RedshiftDecimalType class"""
+
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual("DECIMAL(5, 5)",
+                         RedshiftDecimalType((5, 5)).to_sql())
+
+    def test_is_value_compatible_with_class_returns_true(self):
+        self.assertTrue(RedshiftDecimalType().is_value_compatible_with_class("12.304"))
+
+    def test_is_value_compatible_with_class_returns_true_no_decimal(self):
+        self.assertTrue(RedshiftDecimalType().is_value_compatible_with_class("12"))
+
+    def test_is_value_compatible_with_class_returns_false_multiple_decimal(self):
+        self.assertFalse(RedshiftDecimalType().is_value_compatible_with_class("12.0.0"))
+
+    def test_get_parameter_no_decimal_returns_precision(self):
+        self.assertEqual((5, 0),
+                         RedshiftDecimalType.get_parameter_for_value("12345"))
+
+class TestRedshiftDoublePrecisionTypeMethods(unittest.TestCase):
+
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual("DOUBLE PRECISION",
+                         RedshiftDoublePrecisionType().to_sql())
+
+class TestRedshiftFloatTypeMethods(unittest.TestCase):
+
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual("FLOAT",
+                         RedshiftFloatType().to_sql())
+
+class TestRedshiftBigIntTypeMethods(unittest.TestCase):
+
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual("BIGINT",
+                         RedshiftBigIntType().to_sql())
+
+class TestRedshiftIntTypeMethods(unittest.TestCase):
+
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual("INT",
+                         RedshiftIntType().to_sql())
+
+class TestRedshiftSmallIntType(unittest.TestCase):
+
+    def test_to_sql_returns_correct_string(self):
+        self.assertEqual("SMALLINT",
+                         RedshiftSmallIntType().to_sql())
 
 class TestRedshiftSchematic(unittest.TestCase):
     """Test all the methods for the redshift Schematic class"""
@@ -230,6 +341,13 @@ class TestRedshiftSchematic(unittest.TestCase):
                 (17,
                  17)))
 
+    def test_get_type_returns_decimal_previous_type_decimal(self):
+        self.assertEqual(
+            RedshiftSchematic().get_type(
+                "1234.12345",
+                previous_type=RedshiftDecimalType((2, 3))),
+            RedshiftDecimalType((5, 5)))
+        
     def test_get_type_returns_date_no_previous_type(self):
         self.assertEqual(
             RedshiftSchematic().get_type(
@@ -240,9 +358,108 @@ class TestRedshiftSchematic(unittest.TestCase):
                 "today"),
             RedshiftDateType())
 
-    def test_get_type_returns_timestamptz_previous_type_date(self):
-        self.assertEqual(
-            RedshiftSchematic().get_type("2019 - 06 - 22
-
     def test_get_type_returns_timestamp_previous_type_date(self):
-        self.fail("TODO")
+        self.assertEqual(
+            RedshiftSchematic().get_type(
+                "2019-06-22T15:01:24.943",
+                previous_type=RedshiftDateType()),
+            RedshiftTimestampType())
+
+    def test_get_type_returns_timestamp_previous_type_timestamptz(self):
+        self.assertEqual(
+            RedshiftSchematic().get_type(
+                "2019-06-22T11:45:12 PM",
+                previous_type=RedshiftTimestampTZType()),
+            RedshiftTimestampType())
+
+class TestDatePatterns(unittest.TestCase):
+
+    def setUp(self):
+        self.valid_time_strings = [
+            "T19:14:32.123453",
+            " 01:58:32 AM",
+            "T12:29 PM"]
+        self.invalid_time_strings = [
+            "T 12:14:32",
+            " a3:34:39",
+            "T42:12:39.3924"
+            "abc",
+            "3.14159"]
+        self.valid_date_strings = [
+            "2019-03-09",
+            "20190622",
+            "11/2/19",
+            "12/04/2019",
+            "20190622"
+            ]
+        self.invalid_date_strings = [
+            "2019-13-12",
+            "3129-01-33",
+            "122345",
+            "abcde"
+            ]
+        self.valid_timezone_strings = [
+            "+08:00"
+            ]
+        self.invalid_timezone_strings = [
+            "CSTa"
+            ]
+
+        self.valid_timestamp_pattern = "^({})$".format(
+            VALID_DATE_PATTERN + VALID_TIME_PATTERN)
+            
+        self.valid_timestamptz_pattern = "^({})$".format(
+            VALID_DATE_PATTERN + VALID_TIME_PATTERN + VALID_TIMEZONE_PATTERN)
+
+    def matches(self, pattern, string):
+        return bool(re.compile(pattern).match(string))
+
+    def test_valid_matches_times(self):
+        pattern = VALID_TIME_PATTERN
+        for valid_string in self.valid_time_strings:
+            self.assertTrue(self.matches(pattern, valid_string),
+                            msg="pattern: {} string: {}".format(pattern,
+                                                                valid_string))
+
+    def test_invalid_no_matches_times(self):
+        pattern = VALID_TIME_PATTERN
+        for invalid_string in self.invalid_time_strings:
+            self.assertFalse(self.matches(pattern, invalid_string),
+                             msg="pattern: {} string: {}".format(pattern,
+                                                                 invalid_string))
+    
+    def test_valid_matches_dates(self):
+        pattern = VALID_DATE_PATTERN        
+        for valid_string in self.valid_date_strings:
+            self.assertTrue(self.matches(VALID_DATE_PATTERN, valid_string),
+                            msg="pattern: {} string: {}".format(pattern,
+                                                                valid_string))
+
+    def test_invalid_no_matches_dates(self):
+        pattern = VALID_DATE_PATTERN
+        for invalid_string in self.invalid_date_strings:
+            self.assertFalse(self.matches(pattern, invalid_string),
+                             msg="pattern: {} string: {}".format(pattern,
+                                                                 invalid_string))
+
+    def test_valid_matches_timezones(self):
+        pattern = VALID_TIMEZONE_PATTERN
+        for valid_string in self.valid_timezone_strings:
+            self.assertTrue(self.matches(pattern, valid_string),
+                            msg="pattern: {} string: {}".format(pattern,
+                                                                valid_string))
+
+    def test_invalid_no_matches_timezones(self):
+        pattern = VALID_TIMEZONE_PATTERN
+        for invalid_string in self.invalid_timezone_strings:
+                self.assertFalse(self.matches(pattern, invalid_string),
+                                msg="pattern: {} string: {}".format(pattern,
+                                                                    invalid_string))
+    def test_valid_timestamps_match(self):
+        pattern = self.valid_timestamp_pattern
+        for valid_ds in self.valid_date_strings:
+            for valid_ts in self.valid_time_strings:
+                valid_string = valid_ds + valid_ts
+                self.assertTrue(self.matches(pattern, valid_string),
+                            msg="pattern: {} string: {}".format(pattern,
+                                                                valid_string))

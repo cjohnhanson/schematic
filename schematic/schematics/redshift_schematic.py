@@ -32,11 +32,29 @@ Based on Redshift documentation:
 TODO(Cody): Determine how/whether to handle CHAR types (currently defaults to VARCHAR)
 TODO(Cody): Determine how/whether to handle NCHAR and NVARCHAR types
 TODO(Cody): Implement how/whether to handle BPCHAR and TEXT types
+TODO(Cody): Get the datetime regexes 1:1 with Redshift's datetime logic
 """
 import schematic
 import re
 from psycopg2 import sql
 
+VALID_DATE_PATTERNS = [
+    r"([0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1]))",
+    r"(([0-9]{4})(0[1-9]|1[0-2])(0[1-9]|2[1-9]|3[0-1]))",
+    r"((0[1-9]|1[0-2])/(0[1-9]|2[1-9]|3[0-1]|[1-9])/([0-9]{2}|[0-9]{4}))",
+    r"(today)",
+    r"(tomorrow)",
+    r"(yesterday)"]
+VALID_DATE_PATTERN = r"({})".format(r"|".join(VALID_DATE_PATTERNS))
+VALID_TIME_PATTERNS = [
+    r"((T| )(((([0-1][0-9])|(2[0-3])):([0-5][0-9])(:([0-5][0-9]))?(\.[0-9])*)))",
+    r"((T| )((0[1-9]|1[0-2]):([0-5][0-9])(:([0-5][0-9]))?(\.[0-9]*)? (AM|PM)))"
+    ]
+VALID_TIME_PATTERN = r"({})".format("|".join(VALID_TIME_PATTERNS))
+VALID_TIMEZONE_PATTERNS = [
+    r"(\+(0[1-9]|1[0-2]):00)"
+    ]
+VALID_TIMEZONE_PATTERN = r"({})".format("|".join(VALID_TIMEZONE_PATTERNS))
 
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """Redshift-specific implementation of TableColumn
@@ -50,7 +68,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
       notnull: Whether or not this column has a NOT NULL constraint.
     """
 
-    def __init__(self, name, column_type, distkey, sortkey, encoding, notnull):
+    def __init__(self, name, column_type, distkey=False, sortkey=None, encoding=None, notnull=False):
         super(RedshiftTableColumn, self).__init__(name, column_type)
         self.distkey = distkey
         self.sortkey = sortkey
@@ -124,7 +142,7 @@ class RedshiftCharType(RedshiftVarcharType):
         super(RedshiftCharType, self).__init__(parameter)
 
     def to_sql(self):
-        return "CHAR ({})".format(self.len)
+        return "CHAR ({})".format(self.parameter)
 
     def is_value_compatible_with_instance(self, value):
         return len(
@@ -151,10 +169,9 @@ class RedshiftBooleanType(schematic.TableColumnType):
 
     def __init__(self):
         super(RedshiftBooleanType, self).__init__()
-        self.len = len
 
     def to_sql(self):
-        return "BOOLEAN".format(self.len)
+        return "BOOLEAN"
 
     def is_value_compatible_with_class(self, value):
         """Determine if value can be inserted into column of
@@ -194,15 +211,14 @@ class RedshiftTimestampType(RedshiftAbstractDatetimeType):
     name = "RedshiftTimestampType"
     next_less_restrictive = RedshiftVarcharType
     parameterized = False
-    valid_regexes = [
-        "(^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1])$)"]
-    valid_regex = re.compile("|".join(valid_regexes))
+    valid_regex = re.compile("^({})({})$".format(VALID_DATE_PATTERN,
+                                                 VALID_TIME_PATTERN))
 
     def __init__(self):
         super(RedshiftTimestampType, self).__init__()
 
     def to_sql(self):
-        return "TIMESTAMP".format(self.len)
+        return "TIMESTAMP"
 
 
 class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
@@ -210,15 +226,15 @@ class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
     name = "RedshiftTimestampTZType"
     next_less_restrictive = RedshiftTimestampType
     parameterized = False
-    valid_regexes = [
-        "(^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1])$)"]
-    valid_regex = re.compile("|".join(valid_regexes))
+    valid_regex = re.compile("^({})({})({})$".format(VALID_DATE_PATTERN,
+                                                     VALID_TIME_PATTERN,
+                                                     VALID_TIMEZONE_PATTERN))
 
     def __init__(self):
         super(RedshiftTimestampTZType, self).__init__()
 
     def to_sql(self):
-        return "TIMESTAMPTZ".format(self.len)
+        return "TIMESTAMPTZ"
 
 
 class RedshiftDateType(RedshiftAbstractDatetimeType):
@@ -226,18 +242,13 @@ class RedshiftDateType(RedshiftAbstractDatetimeType):
     name = "RedshiftDateType"
     next_less_restrictive = RedshiftTimestampTZType
     parameterized = False
-    valid_regexes = [
-        "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|1[1-9]|2[1-9]|3[0-1])$",
-        "(today)",
-        "(tomorrow)",
-        "(yesterday)"]
-    valid_regex = re.compile("|".join(valid_regexes))
+    valid_regex = re.compile("^({})$".format(VALID_DATE_PATTERN))
 
     def __init__(self):
         super(RedshiftDateType, self).__init__()
 
     def to_sql(self):
-        return "DATE".format(self.len)
+        return "DATE"
 
 
 class RedshiftAbstractDecimalType(schematic.TableColumnType):
@@ -275,8 +286,6 @@ class RedshiftAbstractDecimalType(schematic.TableColumnType):
         except ValueError:
             return False
         split_at_decimal = str(value).split(".")
-        if len(split_at_decimal) > 2:
-            return False
         if len(split_at_decimal) == 1:
             split_at_decimal.append("")
         return (len(split_at_decimal[1]) <= scale_to_check and
@@ -339,7 +348,7 @@ class RedshiftDoublePrecisionType(RedshiftAbstractDecimalType):
         super(RedshiftDoublePrecisionType, self).__init__()
 
     def to_sql(self):
-        return "DOUBLE PRECISION".format(self.len)
+        return "DOUBLE PRECISION"
 
     def is_value_compatible_with_class(self, value):
         """Determine if value can be inserted into column of
@@ -363,7 +372,7 @@ class RedshiftFloatType(RedshiftAbstractDecimalType):
         super(RedshiftFloatType, self).__init__()
 
     def to_sql(self):
-        return "FLOAT".format(self.len)
+        return "FLOAT"
 
     def is_value_compatible_with_class(self, value):
         """Determine if value can be inserted into column of
@@ -415,7 +424,7 @@ class RedshiftBigIntType(RedshiftAbstractIntType):
         super(RedshiftBigIntType, self).__init__()
 
     def to_sql(self):
-        return "BIGINT".format(self.len)
+        return "BIGINT"
 
 
 class RedshiftIntType(RedshiftAbstractIntType):
@@ -430,7 +439,7 @@ class RedshiftIntType(RedshiftAbstractIntType):
         super(RedshiftIntType, self).__init__()
 
     def to_sql(self):
-        return "INT".format(self.len)
+        return "INT"
 
 
 class RedshiftSmallIntType(RedshiftAbstractIntType):
@@ -445,7 +454,7 @@ class RedshiftSmallIntType(RedshiftAbstractIntType):
         super(RedshiftSmallIntType, self).__init__()
 
     def to_sql(self):
-        return "SMALLINT".format(self.len)
+        return "SMALLINT"
 
 
 class RedshiftTableDefinition(schematic.TableDefinition):

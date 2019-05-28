@@ -208,7 +208,7 @@ class TestTableColumnTypeMethods(unittest.TestCase):
     def test_from_value_non_parameterized_returns_instance(self):
         self.assertEqual(
             MockTableColumnType1.from_value('dummy'),
-            MockTableColumnType1(6))
+            MockTableColumnType1(5))
 
 
 class TestTableColumnMethods(unittest.TestCase):
@@ -300,7 +300,7 @@ class TestSchematicMethods(unittest.TestCase):
         self.assertEqual(
             MockTableColumnType1(10),
             MockSchematic().get_type(
-                "tenletter",
+                "tenletters",
                 previous_type=MockTableColumnType1(6)))
 
     def test_get_type_returns_new_class_when_incompatible_with_previous_type_class(
@@ -308,7 +308,7 @@ class TestSchematicMethods(unittest.TestCase):
         self.assertEqual(
             MockTableColumnType1(10),
             MockSchematic().get_type(
-                "tenletter",
+                "tenletters",
                 previous_type=MockTableColumnType8()))
 
     def test_get_type_returns_previous_type_when_compatible(self):
@@ -320,7 +320,7 @@ class TestSchematicMethods(unittest.TestCase):
 
     def test_get_type_returns_least_restrictive_when_no_other_match(self):
         self.assertEqual(MockSchematic().get_type("MatchNone"),
-                         MockTableColumnType1())
+                         MockTableColumnType1(9))
 
     def test_column_types_yields_all(self):
         all_column_types = frozenset([str(MockTableColumnType8()),
@@ -350,3 +350,10 @@ class TestSchematicMethods(unittest.TestCase):
     def test_get_distance_from_leaf_node_returns_correct_distance_gt_1(self):
         self.assertEqual(
             MockSchematic().get_distance_from_leaf_node(MockTableColumnType5), 2)
+
+class TestTopLevelFunctions(unittest.TestCase):
+    def test_get_schematic_by_name(self):
+        self.assertEqual(schematic.get_schematic_by_name("redshift"),
+                         schematic.schematics.RedshiftSchematic)
+        self.assertEqual(schematic.get_schematic_by_name("csv"),
+                         schematic.schematics.CSVSchematic)
