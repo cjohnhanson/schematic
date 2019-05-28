@@ -220,7 +220,7 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
           column: A TableColumn instance to be added to this instance's columns.
         """
         for col in self.columns:
-            if col.name == column.name:
+            if col.name.upper() == column.name.upper():
                 raise ValueError(
                     "Column with name {} already exists in TableDefinition {}".format(
                         column.name, self.name))
