@@ -24,6 +24,7 @@ import schematic
 import csv
 from os import path
 
+
 class CSVColumnType(schematic.TableColumnType):
     """The only column type for CSVs. Always just a string."""
     name = "CSVColumnType"
@@ -32,27 +33,29 @@ class CSVColumnType(schematic.TableColumnType):
     def is_value_compatible_with_class(self, value):
         """Checks to see if the given value can be inserted into a column of
            the group of types described by this class.
-        
+
         Args:
           value: The value to check, a string
         Returns:
           True
         """
         return True
-        
+
+
 class CSVTableColumn(schematic.TableColumn):
     """A column for a CSV table.
-    
+
        For CSVs without a header, columns are given a default name based
        on the type of the column.
     Attributes:
-      name: The name of the column. 
+      name: The name of the column.
       column_type: Always CSVColumnType
     """
 
     def __init__(self, name):
         super(CSVTableColumn, self).__init__(name,
                                              column_type=CSVColumnType())
+
 
 class CSVTableDefinition(schematic.TableDefinition):
     """CSV-specific implementation of TableDefinition
@@ -69,7 +72,7 @@ class CSVTableDefinition(schematic.TableDefinition):
     def get_rows(self):
         """Get rows from this file
         Yields:
-          A list of values 
+          A list of values
         """
         self.handler.seek(0)
         reader = csv.reader(self.handler)
@@ -93,13 +96,11 @@ class CSVTableDefinition(schematic.TableDefinition):
         return cls(name=path.basename(path.splitext(csv_file.name)[0]),
                    columns=columns,
                    handler=csv_file)
-            
+
+
 class CSVSchematic(schematic.Schematic):
     """"Schematic implementation for working with CSVs.
     """
     name = 'csv'
     most_restrictive_types = [CSVColumnType]
     table_definition_class = CSVTableDefinition
-
-    
-            

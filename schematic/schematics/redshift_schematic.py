@@ -49,13 +49,14 @@ VALID_DATE_PATTERN = r"({})".format(r"|".join(VALID_DATE_PATTERNS))
 VALID_TIME_PATTERNS = [
     r"((T| )(((([0-1][0-9])|(2[0-3])):([0-5][0-9])(:([0-5][0-9]))?(\.[0-9])*)))",
     r"((T| )((0[1-9]|1[0-2]):([0-5][0-9])(:([0-5][0-9]))?(\.[0-9]*)? (AM|PM)))"
-    ]
+]
 VALID_TIME_PATTERN = r"({})".format("|".join(VALID_TIME_PATTERNS))
 VALID_TIMEZONE_PATTERNS = [
     r"(\+(0[1-9]|1[0-2]):00)"
-    ]
+]
 VALID_TIMEZONE_PATTERN = r"({})".format("|".join(VALID_TIMEZONE_PATTERNS))
 DEFAULT_NULL_STRINGS = ["", "None", "Null"]
+
 
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """Redshift-specific implementation of TableColumn
@@ -67,14 +68,26 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
                If this column isn't a sortkey, this is None.
       encoding: The encoding of this tables values.
       notnull: Whether or not this column has a NOT NULL constraint.
+      primary_key: Optimization hint for Redshift query planner, boolean
+      unique: Optimization hint for Redshift query planner, boolean
     """
 
-    def __init__(self, name, column_type, distkey=False, sortkey=None, encoding=None, notnull=False):
+    def __init__(self,
+                 name,
+                 column_type,
+                 distkey=False,
+                 sortkey=None,
+                 encoding=None,
+                 notnull=False,
+                 primary_key=False,
+                 unique=False):
         super().__init__(name, column_type)
         self.distkey = distkey
         self.sortkey = sortkey
         self.encoding = encoding
         self.notnull = notnull
+        self.primary_key = primary_key
+        self.unique = unique
 
 
 class RedshiftVarcharType(schematic.TableColumnType):
@@ -96,7 +109,7 @@ class RedshiftVarcharType(schematic.TableColumnType):
                     RedshiftSchematic.MAX_CHAR_BYTES))
 
     def to_sql(self):
-        return "VARCHAR ({})".format(self.parameter)
+        return sql.SQL("VARCHAR ({})".format(self.parameter))
 
     def value_is_compatible(self, value):
         """Determine if value can be inserted into column of
@@ -143,7 +156,7 @@ class RedshiftCharType(RedshiftVarcharType):
         super(RedshiftCharType, self).__init__(parameter)
 
     def to_sql(self):
-        return "CHAR ({})".format(self.parameter)
+        return sql.SQL("CHAR ({})".format(self.parameter))
 
     def value_is_compatible(self, value):
         return len(
@@ -158,30 +171,6 @@ class RedshiftCharType(RedshiftVarcharType):
             str(value)) and super(
             RedshiftCharType,
             self)._value_is_compatible_superset(value)
-
-
-class RedshiftBooleanType(schematic.TableColumnType):
-    """A boolean type in Redshift"""
-    name = "RedshiftBooleanType"
-    next_less_restrictive = RedshiftVarcharType
-    parameterized = False
-    valid_true_literals = ['TRUE', 't', 'true', 'y', 'yes', '1']
-    valid_false_literals = ['FALSE', 'f', 'false', 'n', 'no', '0']
-
-    def __init__(self):
-        super(RedshiftBooleanType, self).__init__()
-
-    def to_sql(self):
-        return "BOOLEAN"
-
-    def _value_is_compatible_superset(self, value):
-        """Determine if value can be inserted into column of
-           the group of types described by the class.
-
-        Args:
-          value: The value to check.
-        """
-        return value in self.valid_false_literals or value in self.valid_true_literals
 
 
 class RedshiftAbstractDatetimeType(schematic.TableColumnType):
@@ -219,7 +208,7 @@ class RedshiftTimestampType(RedshiftAbstractDatetimeType):
         super(RedshiftTimestampType, self).__init__()
 
     def to_sql(self):
-        return "TIMESTAMP"
+        return sql.SQL("TIMESTAMP")
 
 
 class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
@@ -235,7 +224,7 @@ class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
         super(RedshiftTimestampTZType, self).__init__()
 
     def to_sql(self):
-        return "TIMESTAMPTZ"
+        return sql.SQL("TIMESTAMPTZ")
 
 
 class RedshiftDateType(RedshiftAbstractDatetimeType):
@@ -249,7 +238,7 @@ class RedshiftDateType(RedshiftAbstractDatetimeType):
         super(RedshiftDateType, self).__init__()
 
     def to_sql(self):
-        return "DATE"
+        return sql.SQL("DATE")
 
 
 class RedshiftAbstractDecimalType(schematic.TableColumnType):
@@ -306,7 +295,7 @@ class RedshiftDecimalType(RedshiftAbstractDecimalType):
         self.precision, self.scale = parameter
 
     def to_sql(self):
-        return "DECIMAL({}, {})".format(self.precision, self.scale)
+        return sql.SQL("DECIMAL({}, {})".format(self.precision, self.scale))
 
     def value_is_compatible(self, value):
         """Determine if value can be inserted into column of
@@ -349,7 +338,7 @@ class RedshiftDoublePrecisionType(RedshiftAbstractDecimalType):
         super(RedshiftDoublePrecisionType, self).__init__()
 
     def to_sql(self):
-        return "DOUBLE PRECISION"
+        return sql.SQL("DOUBLE PRECISION")
 
     def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
@@ -373,7 +362,7 @@ class RedshiftFloatType(RedshiftAbstractDecimalType):
         super(RedshiftFloatType, self).__init__()
 
     def to_sql(self):
-        return "FLOAT"
+        return sql.SQL("FLOAT")
 
     def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
@@ -413,6 +402,7 @@ class RedshiftAbstractIntType(schematic.TableColumnType):
                 cast_value <= self.max_value and
                 cast_value // 1 == cast_value)
 
+
 class RedshiftBigIntType(RedshiftAbstractIntType):
     """An bigint type in Redshift"""
     name = "RedshiftBigIntType"
@@ -424,7 +414,7 @@ class RedshiftBigIntType(RedshiftAbstractIntType):
         super(RedshiftBigIntType, self).__init__()
 
     def to_sql(self):
-        return "BIGINT"
+        return sql.SQL("BIGINT")
 
 
 class RedshiftIntType(RedshiftAbstractIntType):
@@ -439,7 +429,7 @@ class RedshiftIntType(RedshiftAbstractIntType):
         super(RedshiftIntType, self).__init__()
 
     def to_sql(self):
-        return "INT"
+        return sql.SQL("INT")
 
 
 class RedshiftSmallIntType(RedshiftAbstractIntType):
@@ -454,13 +444,40 @@ class RedshiftSmallIntType(RedshiftAbstractIntType):
         super(RedshiftSmallIntType, self).__init__()
 
     def to_sql(self):
-        return "SMALLINT"
+        return sql.SQL("SMALLINT")
+
+
+class RedshiftBooleanType(schematic.TableColumnType):
+    """A boolean type in Redshift"""
+    name = "RedshiftBooleanType"
+    next_less_restrictive = RedshiftBigIntType
+    parameterized = False
+    valid_true_literals = ['TRUE', 't', 'true', 'y', 'yes', '1']
+    valid_false_literals = ['FALSE', 'f', 'false', 'n', 'no', '0']
+
+    def __init__(self):
+        super(RedshiftBooleanType, self).__init__()
+
+    def to_sql(self):
+        return sql.SQL("BOOLEAN")
+
+    def _value_is_compatible_superset(self, value):
+        """Determine if value can be inserted into column of
+           the group of types described by the class.
+
+        Args:
+          value: The value to check.
+        """
+        return value in self.valid_false_literals or value in self.valid_true_literals
 
 
 class RedshiftTableDefinition(schematic.TableDefinition):
     """Redshift-specific implementation of TableDefinition"""
 
     def __init__(self, schema, name, columns):
+        self.schema = schema
+        self.name = "{}.{}".format(schema, name)
+        self.columns = columns
         self.sortkeys = []
         sk_dict = {}
         self.distkey = None
@@ -487,8 +504,8 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         FROM pg_catalog.pg_table_def
         WHERE schemaname = {schemaname}
           AND tablename = {tablename};
-        """.format(schemaname=sql.Identifier(schema),
-                   tablename=sql.Identifier(name))
+        """.format(schemaname=sql.Liter(schema),
+                   tablename=sql.Literal(name))
         table_def = cls(schema=schema,
                         name=name,
                         columns=[])
@@ -512,9 +529,12 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         Returns:
           A psycopg2.sql.SQL object for creating a table in Redshift
           based on this RedshiftTableDefinition.
+        Raises:
+          schematic.NoColumnsError: if this table has no columns
         """
-        # TODO
-        raise NotImplementedError
+        if not self.columns:
+            raise schematic.NoColumnsError
+        raise NotImplementedError("TODO")
 
     def create_table(self, conn):
         """Create the table based on this
@@ -560,4 +580,4 @@ class RedshiftSchematic(schematic.Schematic):
     MAX_VARCHAR_BYTES = 65535
     MAX_CHAR_BYTES = 65535
     null_strings = DEFAULT_NULL_STRINGS
-    #TODO: BOOL -> BIGINT -> DOUBLE -> VARCHAR
+    # TODO: BOOL -> BIGINT -> DOUBLE -> VARCHAR

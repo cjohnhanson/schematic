@@ -24,7 +24,8 @@ import click
 from psycopg2 import sql
 from csv import DictReader
 from queue import Queue
-from schematic import NameSqlMixin, DictableMixin, NextLessRestrictiveCycleError
+from schematic import NameSqlMixin, DictableMixin
+
 
 class TableColumnType(NameSqlMixin, DictableMixin, object):
     """Represents a type for a table column.
@@ -60,7 +61,8 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         return self.name
 
     def __eq__(self, other):
-        return isinstance(other, type(self)) and other.parameter == self.parameter
+        return isinstance(
+            other, type(self)) and other.parameter == self.parameter
 
     def __lt__(self, other):
         nlr = other
@@ -153,6 +155,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         else:
             return cls()
 
+
 class TableColumn(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
 
@@ -167,6 +170,7 @@ class TableColumn(DictableMixin, NameSqlMixin, object):
 
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
+
 
 class TableDefinition(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a table
@@ -187,6 +191,14 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
           NotImplementedError: Subclasses should implement this.
         """
         raise NotImplementedError
+
+    def __eq__(self, other):
+        if isinstance(self, type(other)) and self.name == other.name:
+            for column in self.columns:
+                if column not in other.columns:
+                    return False
+            return True
+        return False
 
     def create_table(self, *args, **kwargs):
         """Create the table in the destination
@@ -335,20 +347,22 @@ class Schematic(DictableMixin, object):
         """
         raise NotImplementedError
 
+
 def _get_subclasses_helper(schematic_class):
     """Get all the subclasses of the given class.
-    
+
     Args:
       schematic_class: the class to get subclasses for
     Yields:
-      A subclass of the given schematic, or the given 
+      A subclass of the given schematic, or the given
       schematic if it has no subclasses.
     """
     for subclass in schematic_class.__subclasses__():
         for subsub in _get_subclasses_helper(subclass):
             yield subsub
     yield schematic_class
-        
+
+
 def get_all_schematics():
     """Get all the subclasses of Schematic.
     Yields:
@@ -357,9 +371,10 @@ def get_all_schematics():
     for schematic_class in _get_subclasses_helper(Schematic):
         yield schematic_class
 
+
 def get_schematic_by_name(name):
     """Get Schematic implementation for the given name
-    
+
     Args:
       name: The name of the Schematic implementation to return
     Returns:
@@ -368,4 +383,3 @@ def get_schematic_by_name(name):
     for schematic_class in get_all_schematics():
         if schematic_class.name == name:
             return schematic_class
-

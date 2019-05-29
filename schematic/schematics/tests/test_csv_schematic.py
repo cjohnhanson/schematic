@@ -33,15 +33,19 @@ asd, jfkf, aaddd, 1.394, 1.adf, a, b
 """)
 TEST_CSV_FILE.name = 'testing.csv'
 
+
 class TestCSVColumnTypeMethods(unittest.TestCase):
 
     def test_is_value_compatible_with_class(self):
-        self.assertTrue(csv_schematic.CSVColumnType().is_value_compatible_with_class("anything"))
+        self.assertTrue(csv_schematic.CSVColumnType(
+        ).is_value_compatible_with_class("anything"))
+
 
 class TestCSVTableColumnMethods(unittest.TestCase):
 
     def test_can_instantiate(self):
         csv_schematic.CSVTableColumn("a name")
+
 
 class TestCSVTableDefinitionMethods(unittest.TestCase):
 
@@ -50,16 +54,20 @@ class TestCSVTableDefinitionMethods(unittest.TestCase):
         for column in TEST_CSV_FILE.readline().split(','):
             mock_csv_table_def.add_column(csv_schematic.CSVTableColumn(column))
         TEST_CSV_FILE.seek(0)
-        self.assertEqual(mock_csv_table_def,
-                         csv_schematic.CSVTableDefinition.from_csv(TEST_CSV_FILE))
+        self.assertEqual(
+            mock_csv_table_def,
+            csv_schematic.CSVTableDefinition.from_csv(TEST_CSV_FILE))
 
     def test_get_rows_yields_rows(self):
         TEST_CSV_FILE.readline()
-        rows1 = [tuple(l.strip().split(",")) for l in TEST_CSV_FILE.readlines()]
+        rows1 = [tuple(l.strip().split(","))
+                 for l in TEST_CSV_FILE.readlines()]
         TEST_CSV_FILE.seek(0)
-        csv_table_def = csv_schematic.CSVTableDefinition.from_csv(TEST_CSV_FILE)
+        csv_table_def = csv_schematic.CSVTableDefinition.from_csv(
+            TEST_CSV_FILE)
         rows2 = [row for row in csv_table_def.get_rows()]
         self.assertEqual(rows1, rows2)
+
 
 class TestCSVSchematicMethods(unittest.TestCase):
 

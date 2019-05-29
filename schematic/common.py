@@ -22,9 +22,13 @@
 # SOFTWARE.
 import json
 import yaml
+from psycopg2 import sql
 
 
-class NextLessRestrictiveCycleError(Exception):
+class NoColumnsError(Exception):
+    """"To be raised when a TableDefinition has no columns and
+    one of its instance methods which
+    requires columns is called."""
     pass
 
 
@@ -57,7 +61,7 @@ class DictableMixin(object):
         return cls(**{**class_dict, **kwargs})
 
     def __eq__(self, other):
-        if type(self) == type(other):
+        if isinstance(self, type(other)):
             return self.to_dict() == other.to_dict()
         else:
             return False

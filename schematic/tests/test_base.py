@@ -235,6 +235,40 @@ class TestTableDefinitionMethods(unittest.TestCase):
         self.table_definition = schematic.TableDefinition(
             "TestTableDefinition", columns)
 
+    def test_eq_returns_false_different_type(self):
+        self.assertFalse(
+            schematic.TableDefinition(
+                "TestTableDefinition",
+                []) == MockTableDefinitionClass(
+                "TestTableDefinition",
+                []))
+
+    def test_eq_returns_true_when_eq(self):
+        self.assertTrue(
+            MockTableDefinitionClass(
+                "TestTableDefinition", [
+                    schematic.TableColumn(
+                        "Test", MockTableColumnType5())]) == MockTableDefinitionClass(
+                "TestTableDefinition", [
+                    schematic.TableColumn(
+                        "Test", MockTableColumnType5())]))
+
+    def test_eq_returns_false_different_name(self):
+        self.assertFalse(
+            MockTableDefinitionClass(
+                "TestTableDefinitionOther",
+                []) == MockTableDefinitionClass(
+                "TestTableDefinition",
+                []))
+
+    def test_eq_returns_false_different_columns(self):
+        self.assertFalse(
+            MockTableDefinitionClass(
+                "TestTableDefinition", [
+                    schematic.TableColumn(
+                        "Test", MockTableColumnType5())]) == MockTableDefinitionClass(
+                "TestTableDefinition", []))
+
     def test_create_sql_raises_notimplemented(self):
         with self.assertRaises(NotImplementedError):
             self.table_definition.create_sql()
@@ -350,6 +384,7 @@ class TestSchematicMethods(unittest.TestCase):
     def test_get_distance_from_leaf_node_returns_correct_distance_gt_1(self):
         self.assertEqual(
             MockSchematic().get_distance_from_leaf_node(MockTableColumnType5), 2)
+
 
 class TestTopLevelFunctions(unittest.TestCase):
     def test_get_schematic_by_name(self):
