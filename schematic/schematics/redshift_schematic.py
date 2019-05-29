@@ -70,7 +70,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """
 
     def __init__(self, name, column_type, distkey=False, sortkey=None, encoding=None, notnull=False):
-        super(RedshiftTableColumn, self).__init__(name, column_type)
+        super().__init__(name, column_type)
         self.distkey = distkey
         self.sortkey = sortkey
         self.encoding = encoding

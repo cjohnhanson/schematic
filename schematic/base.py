@@ -256,7 +256,7 @@ class Schematic(DictableMixin, object):
     null_strings = []
 
     def get_distance_from_leaf_node(self, column_type):
-        """Get the distance between the givenx TableColumnType
+        """Get the distance between the given TableColumnType
         and its nearest leaf node.
 
         Returns:
