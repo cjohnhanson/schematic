@@ -55,6 +55,7 @@ VALID_TIMEZONE_PATTERNS = [
     r"(\+(0[1-9]|1[0-2]):00)"
     ]
 VALID_TIMEZONE_PATTERN = r"({})".format("|".join(VALID_TIMEZONE_PATTERNS))
+DEFAULT_NULL_STRINGS = ["", "None", "Null"]
 
 class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
     """Redshift-specific implementation of TableColumn
@@ -97,7 +98,7 @@ class RedshiftVarcharType(schematic.TableColumnType):
     def to_sql(self):
         return "VARCHAR ({})".format(self.parameter)
 
-    def is_value_compatible_with_instance(self, value):
+    def value_is_compatible(self, value):
         """Determine if value can be inserted into column of
            type described by the instance.
 
@@ -106,7 +107,7 @@ class RedshiftVarcharType(schematic.TableColumnType):
         """
         return self.get_parameter_for_value(value) <= self.parameter
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
            the group of types described by the class.
 
@@ -144,19 +145,19 @@ class RedshiftCharType(RedshiftVarcharType):
     def to_sql(self):
         return "CHAR ({})".format(self.parameter)
 
-    def is_value_compatible_with_instance(self, value):
+    def value_is_compatible(self, value):
         return len(
             str(value).encode("utf-8")) == len(
             str(value)) and super(
             RedshiftCharType,
-            self).is_value_compatible_with_instance(value)
+            self).value_is_compatible(value)
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return len(
             str(value).encode("utf-8")) == len(
             str(value)) and super(
             RedshiftCharType,
-            self).is_value_compatible_with_class(value)
+            self)._value_is_compatible_superset(value)
 
 
 class RedshiftBooleanType(schematic.TableColumnType):
@@ -173,7 +174,7 @@ class RedshiftBooleanType(schematic.TableColumnType):
     def to_sql(self):
         return "BOOLEAN"
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
            the group of types described by the class.
 
@@ -193,7 +194,7 @@ class RedshiftAbstractDatetimeType(schematic.TableColumnType):
     """
     valid_regex = None
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Check to see if a given value could be
         inserted into a column of this type.
 
@@ -307,7 +308,7 @@ class RedshiftDecimalType(RedshiftAbstractDecimalType):
     def to_sql(self):
         return "DECIMAL({}, {})".format(self.precision, self.scale)
 
-    def is_value_compatible_with_instance(self, value):
+    def value_is_compatible(self, value):
         """Determine if value can be inserted into column of
            type described by the instance.
 
@@ -316,7 +317,7 @@ class RedshiftDecimalType(RedshiftAbstractDecimalType):
         """
         return self.check_compatible(value)
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
            the group of types described by the class.
 
@@ -350,7 +351,7 @@ class RedshiftDoublePrecisionType(RedshiftAbstractDecimalType):
     def to_sql(self):
         return "DOUBLE PRECISION"
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
            the group of types described by the class.
 
@@ -374,7 +375,7 @@ class RedshiftFloatType(RedshiftAbstractDecimalType):
     def to_sql(self):
         return "FLOAT"
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
            the group of types described by the class.
 
@@ -397,7 +398,7 @@ class RedshiftAbstractIntType(schematic.TableColumnType):
     min_value = None
     max_value = None
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
            the group of types described by the class.
 
@@ -411,7 +412,6 @@ class RedshiftAbstractIntType(schematic.TableColumnType):
         return (cast_value >= self.min_value and
                 cast_value <= self.max_value and
                 cast_value // 1 == cast_value)
-
 
 class RedshiftBigIntType(RedshiftAbstractIntType):
     """An bigint type in Redshift"""
@@ -555,8 +555,9 @@ class RedshiftSchematic(schematic.Schematic):
     name = 'redshift'
     most_restrictive_types = [RedshiftVarcharType,
                               RedshiftBooleanType,
-                              RedshiftSmallIntType,
                               RedshiftDateType]
     table_def = RedshiftTableDefinition
     MAX_VARCHAR_BYTES = 65535
     MAX_CHAR_BYTES = 65535
+    null_strings = DEFAULT_NULL_STRINGS
+    #TODO: BOOL -> BIGINT -> DOUBLE -> VARCHAR

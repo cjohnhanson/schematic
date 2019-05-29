@@ -26,7 +26,6 @@ from csv import DictReader
 from queue import Queue
 from schematic import NameSqlMixin, DictableMixin, NextLessRestrictiveCycleError
 
-
 class TableColumnType(NameSqlMixin, DictableMixin, object):
     """Represents a type for a table column.
 
@@ -61,17 +60,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         return self.name
 
     def __eq__(self, other):
-        if isinstance(
-                other,
-                TableColumnType) or issubclass(
-                type(other),
-                TableColumnType):
-            if self.parameterized and other.parameterized:
-                return self.name == other.name and self.parameter == other.parameter
-            else:
-                return self.name == other.name
-        else:
-            return False
+        return isinstance(other, type(self)) and other.parameter == self.parameter
 
     def __lt__(self, other):
         nlr = other
@@ -99,14 +88,13 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
             depth += 1
         return depth
 
-    def is_value_compatible_with_instance(self, value):
+    def value_is_compatible(self, value):
         """Checks to see if the given value can be inserted into a column of
            the type described by this instance.
-
         Args:
           value: The value to check, a string
         Returns:
-          True if is_value_compatible_with_class(self, value) is True and
+          True if _value_is_compatible_superset(self, value) is True and
           this type isn't parameterized
         Raises:
           NotImplementedError: This should be implemented by subclasses
@@ -115,18 +103,16 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         if self.parameterized:
             raise NotImplementedError
         else:
-            return self.is_value_compatible_with_class(value)
+            return self._value_is_compatible_superset(value)
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         """Checks to see if the given value can be inserted into a column of
            the group of types described by this class.
-
            This is used, for example, to check if a value could
            fit into any VARCHAR class in a SQL database, whereas
-           is_value_compatible_with_instance would be used
+           value_is_compatible would be used
            to check if a value could fit into specifically
            into a VARCHAR(256) class.
-
         Args:
           value: The value to check, a string
         Raises:
@@ -155,10 +141,10 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
         Returns:
           An instance of cls that can fit the value.
         Raises:
-          ValueError: if value cannot fit in any instance of this class.
+          NoCompatibleParameterError: if value cannot fit in any instance of this class.
         """
         if cls.parameterized:
-            if not cls().is_value_compatible_with_class(value):
+            if not cls()._value_is_compatible_superset(value):
                 raise ValueError(
                     "Value {} not compatible with any instance of {}".format(
                         value, cls.name))
@@ -166,7 +152,6 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
                 return cls(parameter=cls.get_parameter_for_value(value))
         else:
             return cls()
-
 
 class TableColumn(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
@@ -182,7 +167,6 @@ class TableColumn(DictableMixin, NameSqlMixin, object):
 
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
-
 
 class TableDefinition(DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a table
@@ -269,6 +253,7 @@ class Schematic(DictableMixin, object):
     name = 'schematic'
     most_restrictive_types = []
     table_definition_class = TableDefinition
+    null_strings = []
 
     def get_distance_from_leaf_node(self, column_type):
         """Get the distance between the givenx TableColumnType
@@ -304,17 +289,19 @@ class Schematic(DictableMixin, object):
           ValueError: if the given value can't fit into a column
                       of any type in this Schematic
         """
+        if value in self.null_strings:
+            return previous_type
         if not previous_type:
             depth_dict = {}
             for column_type in self.column_types():
-                if column_type().is_value_compatible_with_class(value):
+                if column_type()._value_is_compatible_superset(value):
                     depth_dict[column_type().get_depth()] = column_type
             if depth_dict:
                 return depth_dict[max(depth_dict.keys())].from_value(value)
-        elif previous_type.is_value_compatible_with_instance(value):
+        elif previous_type.value_is_compatible(value):
             return previous_type
-        elif previous_type.is_value_compatible_with_class(value):
-            return previous_type.__class__.from_value(value)
+        elif previous_type._value_is_compatible_superset(value):
+            return previous_type.from_value(value)
         elif previous_type.next_less_restrictive:
             return self.get_type(
                 value, previous_type=previous_type.next_less_restrictive())

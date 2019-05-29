@@ -32,12 +32,12 @@ class MockTableColumnType1(schematic.TableColumnType):
     def __init__(self, parameter=1):
         super(MockTableColumnType1, self).__init__(parameter=parameter)
 
-    def is_value_compatible_with_instance(self, value):
+    def value_is_compatible(self, value):
         if len(str(value)) > self.parameter:
             return False
         return True
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return value != "BadValue"
 
     def get_parameter_for_value(value):
@@ -48,7 +48,7 @@ class MockTableColumnType2(schematic.TableColumnType):
     name = "MockTableColumnType2"
     next_less_restrictive = MockTableColumnType1
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return False
 
 
@@ -56,7 +56,7 @@ class MockTableColumnType3(schematic.TableColumnType):
     name = "MockTableColumnType3"
     next_less_restrictive = MockTableColumnType1
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return value == "TestDeepest"
 
 
@@ -64,7 +64,7 @@ class MockTableColumnType4(schematic.TableColumnType):
     name = "MockTableColumnType4"
     next_less_restrictive = MockTableColumnType1
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return False
 
 
@@ -72,7 +72,7 @@ class MockTableColumnType5(schematic.TableColumnType):
     name = "MockTableColumnType5"
     next_less_restrictive = MockTableColumnType2
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return value == "TestDeepest"
 
 
@@ -80,7 +80,7 @@ class MockTableColumnType6(schematic.TableColumnType):
     name = "MockTableColumnType6"
     next_less_restrictive = MockTableColumnType5
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return False
 
 
@@ -88,7 +88,7 @@ class MockTableColumnType7(schematic.TableColumnType):
     name = "MockTableColumnType7"
     next_less_restrictive = MockTableColumnType6
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return False
 
 
@@ -96,10 +96,10 @@ class MockTableColumnType8(schematic.TableColumnType):
     name = "MockTableColumnType8"
     next_less_restrictive = MockTableColumnType3
 
-    def is_value_compatible_with_class(self, value):
+    def _value_is_compatible_superset(self, value):
         return False
 
-    def is_value_compatible_with_instance(self, value):
+    def value_is_compatible(self, value):
         return False
 
 
@@ -148,49 +148,49 @@ class TestTableColumnTypeMethods(unittest.TestCase):
         with self.assertRaises(ValueError):
             MockTableColumnType2("dummy parameter")
 
-    def test_is_value_compatible_with_instance_raises_notimplemented_base(
+    def test_value_is_compatible_raises_notimplemented_base(
             self):
         with self.assertRaises(NotImplementedError):
-            schematic.TableColumnType().is_value_compatible_with_instance("dummy")
+            schematic.TableColumnType().value_is_compatible("dummy")
 
-    def test_is_value_compatible_with_instance_raises_notimplemented_parameterized(
+    def test_value_is_compatible_raises_notimplemented_parameterized(
             self):
         with self.assertRaises(NotImplementedError):
-            MockTableColumnTypeParameterized().is_value_compatible_with_instance("dummy")
+            MockTableColumnTypeParameterized().value_is_compatible("dummy")
 
-    def test_is_value_compatible_with_class_raises_notimplemented_base(self):
+    def test__value_is_compatible_superset_raises_notimplemented_base(self):
         with self.assertRaises(NotImplementedError):
-            schematic.TableColumnType().is_value_compatible_with_class("dummy")
+            schematic.TableColumnType()._value_is_compatible_superset("dummy")
 
-    def test_is_value_compatible_with_instance_returns_true_parameterized(
+    def test_value_is_compatible_returns_true_parameterized(
             self):
         self.assertTrue(MockTableColumnType1(
-            6).is_value_compatible_with_instance('dummy'))
+            6).value_is_compatible('dummy'))
 
-    def test_is_value_compatible_with_instance_returns_true_not_parameterized(
+    def test_value_is_compatible_returns_true_not_parameterized(
             self):
         self.assertTrue(
-            MockTableColumnType3().is_value_compatible_with_instance("TestDeepest"))
+            MockTableColumnType3().value_is_compatible("TestDeepest"))
 
     def test_get_parameter_for_value_raises_notimplemented_base(self):
         with self.assertRaises(NotImplementedError):
             schematic.TableColumnType.get_parameter_for_value("dummy")
 
-    def test_is_value_compatible_with_instance_returns_false_parameterized(
+    def test_value_is_compatible_returns_false_parameterized(
             self):
         self.assertFalse(MockTableColumnType1(
-            3).is_value_compatible_with_instance('dummy'))
+            3).value_is_compatible('dummy'))
 
-    def test_is_value_compatible_with_class_returns_true_unrestrictive(self):
+    def test__value_is_compatible_superset_returns_true_unrestrictive(self):
         self.assertTrue(
-            MockTableColumnType1().is_value_compatible_with_class('dummy'))
+            MockTableColumnType1()._value_is_compatible_superset('dummy'))
 
-    def test_is_value_compatible_with_class_raises_valueerror_no_compatible_type(
+    def test__value_is_compatible_superset_raises_valueerror_no_compatible_type(
             self):
         with self.assertRaises(ValueError):
             MockTableColumnType1.from_value("BadValue")
 
-    def test_is_value_compatible_with_class_returns_class_unparameterized(
+    def test__value_is_compatible_superset_returns_class_unparameterized(
             self):
         self.assertEqual(
             MockTableColumnType2(),

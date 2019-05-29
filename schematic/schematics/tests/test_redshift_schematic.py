@@ -2,7 +2,7 @@
 # MIT License
 #
 # Copyright (c) 2019 Cody J. Hanson
-#
+
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
 # in the Software without restriction, including without limitation the rights
@@ -112,71 +112,71 @@ class TestRedshiftVarcharTypeMethods(unittest.TestCase):
         with self.assertRaises(ValueError):
             RedshiftVarcharType(65536)
 
-    def test_is_value_compatible_with_instance_returns_true_when_not_too_long_single_byte_characters(
+    def test_value_is_compatible_returns_true_when_not_too_long_single_byte_characters(
             self):
         self.assertTrue(
-            self.varchar_256_type.is_value_compatible_with_instance(
+            self.varchar_256_type.value_is_compatible(
                 VALUES_TO_TEST['single_single_byte_character']))
         self.assertTrue(
-            self.varchar_max_type.is_value_compatible_with_instance(
+            self.varchar_max_type.value_is_compatible(
                 VALUES_TO_TEST['single_single_byte_character']))
 
-    def test_is_value_compatible_with_instance_returns_true_when_not_too_long_multibyte_characters(
+    def test_value_is_compatible_returns_true_when_not_too_long_multibyte_characters(
             self):
         self.assertTrue(
-            self.varchar_256_type.is_value_compatible_with_instance(
+            self.varchar_256_type.value_is_compatible(
                 VALUES_TO_TEST['single_multibyte_character']))
         self.assertTrue(
-            self.varchar_max_type.is_value_compatible_with_instance(
+            self.varchar_max_type.value_is_compatible(
                 VALUES_TO_TEST['single_multibyte_character']))
 
-    def test_is_value_compatible_with_instance_returns_false_when_too_long_single_byte_characters(
+    def test_value_is_compatible_returns_false_when_too_long_single_byte_characters(
             self):
-        self.assertFalse(self.varchar_256_type.is_value_compatible_with_instance(
+        self.assertFalse(self.varchar_256_type.value_is_compatible(
             VALUES_TO_TEST['too_big_for_varchar_or_char_256_single_byte']))
-        self.assertFalse(self.varchar_max_type.is_value_compatible_with_instance(
+        self.assertFalse(self.varchar_max_type.value_is_compatible(
             VALUES_TO_TEST['too_big_for_varchar_max_single_byte']))
 
-    def test_is_value_compatible_with_instance_returns_false_when_too_long_multibyte_characters(
+    def test_value_is_compatible_returns_false_when_too_long_multibyte_characters(
             self):
         self.assertFalse(
-            self.varchar_256_type.is_value_compatible_with_instance(
+            self.varchar_256_type.value_is_compatible(
                 VALUES_TO_TEST['too_big_for_varchar_256_multibyte']))
         self.assertFalse(
-            self.varchar_max_type.is_value_compatible_with_instance(
+            self.varchar_max_type.value_is_compatible(
                 VALUES_TO_TEST['too_big_for_varchar_max_multibyte']))
 
-    def test_is_value_compatible_with_class_returns_true_when_not_too_long_single_byte_characters(
+    def test__value_is_compatible_superset_returns_true_when_not_too_long_single_byte_characters(
             self):
-        self.assertTrue(self.varchar_256_type.is_value_compatible_with_class(
+        self.assertTrue(self.varchar_256_type._value_is_compatible_superset(
             VALUES_TO_TEST['too_big_for_varchar_or_char_256_single_byte']))
 
-    def test_is_value_compatible_with_class_returns_true_when_not_too_long_multibyte_characters(
+    def test__value_is_compatible_superset_returns_true_when_not_too_long_multibyte_characters(
             self):
-        self.assertTrue(self.varchar_256_type.is_value_compatible_with_class(
+        self.assertTrue(self.varchar_256_type._value_is_compatible_superset(
             VALUES_TO_TEST['too_big_for_varchar_256_multibyte']))
 
-    def test_is_value_compatible_with_class_returns_false_when_too_long_single_byte_characters(
+    def test__value_is_compatible_superset_returns_false_when_too_long_single_byte_characters(
             self):
-        self.assertFalse(self.varchar_max_type.is_value_compatible_with_class(
+        self.assertFalse(self.varchar_max_type._value_is_compatible_superset(
             VALUES_TO_TEST['too_big_for_varchar_max_single_byte']))
 
-    def test_is_value_compatible_with_class_returns_false_when_too_long_multibyte_characters(
+    def test__value_is_compatible_superset_returns_false_when_too_long_multibyte_characters(
             self):
-        self.assertFalse(self.varchar_max_type.is_value_compatible_with_class(
+        self.assertFalse(self.varchar_max_type._value_is_compatible_superset(
             VALUES_TO_TEST['too_big_for_varchar_max_multibyte']))
 
 
 class TestRedshiftCharTypeMethods(unittest.TestCase):
     """Test all the methods for the RedshiftCharType class"""
 
-    def test_is_value_compatible_with_class_returns_false_multibyte(self):
+    def test__value_is_compatible_superset_returns_false_multibyte(self):
         self.assertFalse(RedshiftCharType(
-            5).is_value_compatible_with_class('字abc'))
+            5)._value_is_compatible_superset('字abc'))
 
-    def test_is_value_compatible_with_instance_returns_false_multibyte(self):
+    def test_value_is_compatible_returns_false_multibyte(self):
         self.assertFalse(RedshiftCharType(
-            5).is_value_compatible_with_instance('字abc'))
+            5).value_is_compatible('字abc'))
         
     def test_to_sql_returns_correct_string(self):
         self.assertEqual(RedshiftCharType(5).to_sql(),
@@ -213,14 +213,14 @@ class TestRedshiftDecimalTypeMethods(unittest.TestCase):
         self.assertEqual("DECIMAL(5, 5)",
                          RedshiftDecimalType((5, 5)).to_sql())
 
-    def test_is_value_compatible_with_class_returns_true(self):
-        self.assertTrue(RedshiftDecimalType().is_value_compatible_with_class("12.304"))
+    def test__value_is_compatible_superset_returns_true(self):
+        self.assertTrue(RedshiftDecimalType()._value_is_compatible_superset("12.304"))
 
-    def test_is_value_compatible_with_class_returns_true_no_decimal(self):
-        self.assertTrue(RedshiftDecimalType().is_value_compatible_with_class("12"))
+    def test__value_is_compatible_superset_returns_true_no_decimal(self):
+        self.assertTrue(RedshiftDecimalType()._value_is_compatible_superset("12"))
 
-    def test_is_value_compatible_with_class_returns_false_multiple_decimal(self):
-        self.assertFalse(RedshiftDecimalType().is_value_compatible_with_class("12.0.0"))
+    def test__value_is_compatible_superset_returns_false_multiple_decimal(self):
+        self.assertFalse(RedshiftDecimalType()._value_is_compatible_superset("12.0.0"))
 
     def test_get_parameter_no_decimal_returns_precision(self):
         self.assertEqual((5, 0),
@@ -244,6 +244,9 @@ class TestRedshiftBigIntTypeMethods(unittest.TestCase):
         self.assertEqual("BIGINT",
                          RedshiftBigIntType().to_sql())
 
+    def test__value_is_compatible_superset_returns_false_not_a_number(self):
+        self.assertFalse(RedshiftBigIntType()._value_is_compatible_superset("Not a number"))
+
 class TestRedshiftIntTypeMethods(unittest.TestCase):
 
     def test_to_sql_returns_correct_string(self):
@@ -259,6 +262,15 @@ class TestRedshiftSmallIntType(unittest.TestCase):
 class TestRedshiftSchematic(unittest.TestCase):
     """Test all the methods for the redshift Schematic class"""
 
+    def test_get_type_returns_none_null_string(self):
+        self.assertEqual(None,
+                         RedshiftSchematic().get_type("None"))
+
+    def test_get_type_returns_previous_null_string(self):
+        self.assertEqual(RedshiftSchematic().get_type("",
+                                                      previous_type=RedshiftDateType()),
+                         RedshiftDateType())
+                         
     def test_get_type_returns_bigger_varchar_when_previous_type_too_small_varchar(
             self):
         self.assertEqual(

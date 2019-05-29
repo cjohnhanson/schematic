@@ -21,6 +21,8 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import schematic
+import csv
+from os import path
 
 class CSVColumnType(schematic.TableColumnType):
     """The only column type for CSVs. Always just a string."""
@@ -34,14 +36,10 @@ class CSVColumnType(schematic.TableColumnType):
         Args:
           value: The value to check, a string
         Returns:
-          True if the value can be represented by a string, else False.
+          True
         """
-        try:
-            str(value)
-            return True
-        except:
-            return False
-
+        return True
+        
 class CSVTableColumn(schematic.TableColumn):
     """A column for a CSV table.
     
@@ -52,7 +50,7 @@ class CSVTableColumn(schematic.TableColumn):
       column_type: Always CSVColumnType
     """
 
-    def __init__(self, name, column_type):
+    def __init__(self, name):
         super(CSVTableColumn, self).__init__(name,
                                              column_type=CSVColumnType())
 
@@ -62,24 +60,42 @@ class CSVTableDefinition(schematic.TableDefinition):
     Attributes:
       name: the file's basename
       columns: list of CSVTableColumns in this table
-      filepath: the path to the CSV file described by this definition
     """
 
-    def __init__(self, name, columns, filepath):
+    def __init__(self, name, columns=[], handler=None):
         super(CSVTableDefinition, self).__init__(name, columns)
-        self.filepath = filepath
+        self.handler = handler
 
     def get_rows(self):
         """Get rows from this file
         Yields:
           A list of values 
         """
-        raise NotImplementedError("TODO")
+        self.handler.seek(0)
+        reader = csv.reader(self.handler)
+        next(reader)
+        for line in reader:
+            print(line)
+            yield(tuple(line))
 
-
+    @classmethod
+    def from_csv(cls, csv_file):
+        """Instantiate a CSVTableDefinition from a csv file
+        Args:
+          csv_file: an IO object with the CSV data
+        """
+        csv_file.seek(0)
+        header = csv_file.readline()
+        columns = []
+        for column_name in header.split(","):
+            columns.append(CSVTableColumn(column_name))
+        csv_file.seek(0)
+        return cls(name=path.basename(path.splitext(csv_file.name)[0]),
+                   columns=columns,
+                   handler=csv_file)
+            
 class CSVSchematic(schematic.Schematic):
     """"Schematic implementation for working with CSVs.
-    
     """
     name = 'csv'
     most_restrictive_types = [CSVColumnType]
