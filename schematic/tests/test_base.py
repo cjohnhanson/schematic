@@ -218,7 +218,7 @@ class TestTableColumnMethods(unittest.TestCase):
 
     def test_repr(self):
         self.assertEqual(str(schematic.TableColumn(
-            "TestColumn1", MockTableColumnType1())), "TestColumn1: MockTableColumnType1")
+            "TestColumn1", MockTableColumnType1())), "TestColumn1: MockTableColumnType1 (1)")
 
 
 class TestTableDefinitionMethods(unittest.TestCase):
@@ -234,6 +234,10 @@ class TestTableDefinitionMethods(unittest.TestCase):
                 "TestColumn3", MockTableColumnType3())]
         self.table_definition = schematic.TableDefinition(
             "TestTableDefinition", columns)
+
+    def test_repr_returns_correct_string(self):
+        self.assertEqual(str(self.table_definition),
+                         "TestTableDefinition: [TestColumn1: MockTableColumnType1 (1),TestColumn2: MockTableColumnType2,TestColumn3: MockTableColumnType3]")
 
     def test_eq_returns_false_different_type(self):
         self.assertFalse(

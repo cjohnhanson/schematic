@@ -57,6 +57,59 @@ class TestRedshiftTableColumnMethods(unittest.TestCase):
             notnull=False)
 
 
+ROWS = [("varchar_defaults",
+         "character varying(256)",
+         "none",
+         False,
+         0,
+         False),
+        ("varchar_no_defaults",
+         "character varying(256)",
+         "lzo",
+         True,
+         1,
+         True),
+        ("boolean_defaults",
+         "boolean",
+         "none",
+         False,
+         0,
+         False),
+        ("numeric_1_1_defaults",
+         "numeric(1,1)",
+         "none",
+         False,
+         0,
+         False)
+        ]
+
+
+class MockCursorObject():
+    """A mock cursor object that just returns the given rows"""
+
+    def __init__(self):
+        self.rows = None
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        pass
+
+    def execute(self, sql):
+        self.executed_with = sql
+        self.rows = ROWS
+
+    def fetchall(self):
+        for row in self.rows:
+            yield row
+
+
+class MockConnObject():
+    def __init__(self):
+        self.cursor = MockCursorObject
+
+
 class TestRedshiftTableDefinitionMethods(unittest.TestCase):
     """Test all the methods for the RedshiftTableDefinition class"""
 
@@ -91,6 +144,7 @@ class TestRedshiftTableDefinitionMethods(unittest.TestCase):
             self.mock_table_all_columns.add_column(v)
         self.mock_table_single_varchar_column = RedshiftTableColumn(
             "mock", "single_varchar_column", self.mock_columns_dict['varchar_no_defaults'])
+        self.conn = MockConnObject()
 
     def test_can_instantiate_redshift_table_definition(self):
         RedshiftTableDefinition(
@@ -107,7 +161,9 @@ class TestRedshiftTableDefinitionMethods(unittest.TestCase):
                                          distkey=True)])
 
     def test_can_instantiate_from_connection(self):
-        self.fail("TODO")
+        table_def = RedshiftTableDefinition.from_connection(
+            self.conn, "mock", "all_columns")
+        self.assertEqual(table_def, self.mock_table_all_columns)
 
     def test_column_create_sql_no_encoding(self):
         self.fail("TODO")
@@ -284,11 +340,11 @@ class TestRedshiftDoublePrecisionTypeMethods(unittest.TestCase):
                          RedshiftDoublePrecisionType().to_sql())
 
 
-class TestRedshiftFloatTypeMethods(unittest.TestCase):
+class TestRedshiftRealTypeMethods(unittest.TestCase):
 
     def test_to_sql_returns_correct_string(self):
         self.assertEqual(sql.SQL("FLOAT"),
-                         RedshiftFloatType().to_sql())
+                         RedshiftRealType().to_sql())
 
 
 class TestRedshiftBigIntTypeMethods(unittest.TestCase):
@@ -401,13 +457,13 @@ class TestRedshiftSchematic(unittest.TestCase):
             RedshiftSchematic().get_type(
                 "-943.1",
                 previous_type=RedshiftSmallIntType()),
-            RedshiftFloatType())
+            RedshiftRealType())
 
     def test_get_type_returns_double_previous_type_float(self):
         self.assertEqual(
             RedshiftSchematic().get_type(
                 "123456.123456",
-                previous_type=RedshiftFloatType()),
+                previous_type=RedshiftRealType()),
             RedshiftDoublePrecisionType())
 
     def test_get_type_returns_decimal_previous_type_double(self):
@@ -449,6 +505,11 @@ class TestRedshiftSchematic(unittest.TestCase):
                 "2019-06-22T11:45:12 PM",
                 previous_type=RedshiftTimestampTZType()),
             RedshiftTimestampType())
+
+    def test_get_type_from_string_returns_varchar(self):
+        self.assertEqual(
+            RedshiftSchematic().get_type_from_string("character varying(256)"),
+            RedshiftVarcharType(256))
 
 
 class TestDatePatterns(unittest.TestCase):

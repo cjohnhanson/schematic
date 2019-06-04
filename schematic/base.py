@@ -57,8 +57,14 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
                     self.name))
         self.parameter = parameter
 
+    def __hash__(self):
+        return hash((self.name, self.parameter))
+
     def __repr__(self):
-        return self.name
+        if self.parameterized:
+            return "{} ({})".format(self.name, self.parameter)
+        else:
+            return self.name
 
     def __eq__(self, other):
         return isinstance(
@@ -168,8 +174,15 @@ class TableColumn(DictableMixin, NameSqlMixin, object):
         self.name = name
         self.type = column_type
 
+    def __hash__(self):
+        return hash((self.name, self.type))
+
     def __repr__(self):
         return "{}: {}".format(self.name, self.type)
+
+    def __eq__(self, other):
+        return isinstance(
+            self, type(other)) and self.name == other.name and self.type == other.type
 
 
 class TableDefinition(DictableMixin, NameSqlMixin, object):
@@ -193,12 +206,15 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
         raise NotImplementedError
 
     def __eq__(self, other):
-        if isinstance(self, type(other)) and self.name == other.name:
-            for column in self.columns:
-                if column not in other.columns:
-                    return False
-            return True
-        return False
+        return isinstance(
+            self,
+            type(other)) and self.name == other.name and frozenset(
+            self.columns) == frozenset(
+            other.columns)
+
+    def __repr__(self):
+        return "{}: [{}]".format(self.name, ",".join(
+            [str(col) for col in self.columns]))
 
     def create_table(self, *args, **kwargs):
         """Create the table in the destination

@@ -90,19 +90,48 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
         self.unique = unique
 
 
-class RedshiftVarcharType(schematic.TableColumnType):
+class RedshiftTableColumnType(schematic.TableColumnType):
+    """Base class for all Redshift-specific TableColumnType
+    implementations.
+
+    Attributes:
+      def_regex: a regex to match against the "type" column in pg_table_def
+    """
+    def_regex = None
+
+    @classmethod
+    def from_pg_table_def(cls, type_string):
+        """Instantiate from the string in the "type" column of pg_table_def.
+        Returns:
+          A RedshiftTableColumnType instance
+        Raises:
+          ValueError: if the type_string can't be matched by the def_regex for the class
+        """
+        search = cls.def_regex.search(type_string)
+        if not search:
+            raise ValueError(
+                "{} is not a valid type string for {}".format(
+                    type_string, cls.name))
+        if cls.parameterized:
+            return cls(parameter=search.group(1))
+        else:
+            return(cls())
+
+
+class RedshiftVarcharType(RedshiftTableColumnType):
     """A Varchar type in Redshift.
 
     Attributes:
       parameter: int. The maximum length (in bytes) that can fit
-               in a column of this type.
+                 in a column of this type.
     """
     name = "RedshiftVarcharType"
     next_less_restrictive = None
     parameterized = True
+    def_regex = re.compile(r"character varying\(([0-9]+)\)")
 
     def __init__(self, parameter=1):
-        super(RedshiftVarcharType, self).__init__(parameter=parameter)
+        super(RedshiftVarcharType, self).__init__(parameter=int(parameter))
         if self.parameter > RedshiftSchematic.MAX_CHAR_BYTES:
             raise ValueError(
                 "Value too large for parameter. VARCHAR columns can have a length of at most {}".format(
@@ -151,9 +180,10 @@ class RedshiftCharType(RedshiftVarcharType):
     """
     name = "RedshiftCharType"
     next_less_restrictive = RedshiftVarcharType
+    def_regex = re.compile(r"character\(([0-9]+)\)")
 
     def __init__(self, parameter=1):
-        super(RedshiftCharType, self).__init__(parameter)
+        super(RedshiftCharType, self).__init__(int(parameter))
 
     def to_sql(self):
         return sql.SQL("CHAR ({})".format(self.parameter))
@@ -173,7 +203,7 @@ class RedshiftCharType(RedshiftVarcharType):
             self)._value_is_compatible_superset(value)
 
 
-class RedshiftAbstractDatetimeType(schematic.TableColumnType):
+class RedshiftAbstractDatetimeType(RedshiftTableColumnType):
     """Abstract datetime type to provide subclasses compatibility
     checking logic.
 
@@ -201,6 +231,7 @@ class RedshiftTimestampType(RedshiftAbstractDatetimeType):
     name = "RedshiftTimestampType"
     next_less_restrictive = RedshiftVarcharType
     parameterized = False
+    def_regex = re.compile(r"timestamp without time zone")
     valid_regex = re.compile("^({})({})$".format(VALID_DATE_PATTERN,
                                                  VALID_TIME_PATTERN))
 
@@ -216,6 +247,7 @@ class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
     name = "RedshiftTimestampTZType"
     next_less_restrictive = RedshiftTimestampType
     parameterized = False
+    def_regex = re.compile(r"timestamp with time zone")
     valid_regex = re.compile("^({})({})({})$".format(VALID_DATE_PATTERN,
                                                      VALID_TIME_PATTERN,
                                                      VALID_TIMEZONE_PATTERN))
@@ -232,6 +264,7 @@ class RedshiftDateType(RedshiftAbstractDatetimeType):
     name = "RedshiftDateType"
     next_less_restrictive = RedshiftTimestampTZType
     parameterized = False
+    def_regex = re.compile(r"date")
     valid_regex = re.compile("^({})$".format(VALID_DATE_PATTERN))
 
     def __init__(self):
@@ -241,7 +274,7 @@ class RedshiftDateType(RedshiftAbstractDatetimeType):
         return sql.SQL("DATE")
 
 
-class RedshiftAbstractDecimalType(schematic.TableColumnType):
+class RedshiftAbstractDecimalType(RedshiftTableColumnType):
     """Abstract decimal type to provide subclasses compatibility
     checking logic.
 
@@ -289,10 +322,20 @@ class RedshiftDecimalType(RedshiftAbstractDecimalType):
     parameterized = True
     max_scale = 37
     max_precision = 38
+    def_regex = re.compile(r"numeric\(([0-9]+),([0-9]+)\)")
 
     def __init__(self, parameter=(1, 1)):
         super(RedshiftDecimalType, self).__init__()
-        self.precision, self.scale = parameter
+        self.precision, self.scale = int(parameter[0]), int(parameter[1])
+
+    @classmethod
+    def from_pg_table_def(cls, type_string):
+        search = cls.def_regex.search(type_string)
+        if not search:
+            raise ValueError(
+                "{} is not a valid type string for {}".format(
+                    type_string, cls.name))
+        return cls(parameter=search.groups())
 
     def to_sql(self):
         return sql.SQL("DECIMAL({}, {})".format(self.precision, self.scale))
@@ -333,6 +376,7 @@ class RedshiftDoublePrecisionType(RedshiftAbstractDecimalType):
     parameterized = False
     precision = 15
     scale = 15
+    def_regex = re.compile(r"double precision")
 
     def __init__(self):
         super(RedshiftDoublePrecisionType, self).__init__()
@@ -350,19 +394,20 @@ class RedshiftDoublePrecisionType(RedshiftAbstractDecimalType):
         return self.check_compatible(value)
 
 
-class RedshiftFloatType(RedshiftAbstractDecimalType):
-    """An float type in Redshift"""
-    name = "RedshiftFloatType"
+class RedshiftRealType(RedshiftAbstractDecimalType):
+    """An real type in Redshift"""
+    name = "RedshiftRealType"
     next_less_restrictive = RedshiftDoublePrecisionType
     parameterized = False
     precision = 6
     scale = 6
+    def_regex = re.compile(r"real")
 
     def __init__(self):
-        super(RedshiftFloatType, self).__init__()
+        super(RedshiftRealType, self).__init__()
 
     def to_sql(self):
-        return sql.SQL("FLOAT")
+        return sql.SQL("REAL")
 
     def _value_is_compatible_superset(self, value):
         """Determine if value can be inserted into column of
@@ -374,7 +419,7 @@ class RedshiftFloatType(RedshiftAbstractDecimalType):
         return self.check_compatible(value)
 
 
-class RedshiftAbstractIntType(schematic.TableColumnType):
+class RedshiftAbstractIntType(RedshiftTableColumnType):
     """Abstract int type to provide subclasses compatibility
     checking logic.
 
@@ -406,9 +451,10 @@ class RedshiftAbstractIntType(schematic.TableColumnType):
 class RedshiftBigIntType(RedshiftAbstractIntType):
     """An bigint type in Redshift"""
     name = "RedshiftBigIntType"
-    next_less_restrictive = RedshiftFloatType
+    next_less_restrictive = RedshiftRealType
     min_value = -9223372036854775808
     max_value = 9223372036854775807
+    def_regex = re.compile(r"bigint")
 
     def __init__(self):
         super(RedshiftBigIntType, self).__init__()
@@ -424,6 +470,7 @@ class RedshiftIntType(RedshiftAbstractIntType):
     parameterized = False
     min_value = -2147483648
     max_value = 2147483647
+    def_regex = re.compile(r"int")
 
     def __init__(self):
         super(RedshiftIntType, self).__init__()
@@ -439,6 +486,7 @@ class RedshiftSmallIntType(RedshiftAbstractIntType):
     parameterized = False
     min_value = -32768
     max_value = 32767
+    def_regex = re.compile(r"smallint")
 
     def __init__(self):
         super(RedshiftSmallIntType, self).__init__()
@@ -447,13 +495,14 @@ class RedshiftSmallIntType(RedshiftAbstractIntType):
         return sql.SQL("SMALLINT")
 
 
-class RedshiftBooleanType(schematic.TableColumnType):
+class RedshiftBooleanType(RedshiftTableColumnType):
     """A boolean type in Redshift"""
     name = "RedshiftBooleanType"
     next_less_restrictive = RedshiftBigIntType
     parameterized = False
     valid_true_literals = ['TRUE', 't', 'true', 'y', 'yes', '1']
     valid_false_literals = ['FALSE', 'f', 'false', 'n', 'no', '0']
+    def_regex = re.compile(r"boolean")
 
     def __init__(self):
         super(RedshiftBooleanType, self).__init__()
@@ -491,8 +540,20 @@ class RedshiftTableDefinition(schematic.TableDefinition):
 
     @classmethod
     def from_connection(cls, conn, schema, name):
-        """Instantiate from a redshift cursor"""
-        get_sql = """
+        """Instantiate from a redshift connection"
+
+        Args:
+          conn: A psycopg2.connection to a Redshift instance
+          schema: The name of the schema where the table resides
+          name: The name of the table to create a definition for
+        Returns:
+          A RedshiftTableDefinition object
+        Raises:
+          psycopg2.ProgrammingError: if the specified table does not exist
+          psycopg2.OperationalError: if there are connection/transaction issues
+
+        """
+        get_sql = sql.SQL("""
         SET search_path TO {schemaname};
         SELECT
           "column",
@@ -504,18 +565,18 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         FROM pg_catalog.pg_table_def
         WHERE schemaname = {schemaname}
           AND tablename = {tablename};
-        """.format(schemaname=sql.Liter(schema),
-                   tablename=sql.Literal(name))
+        """).format(schemaname=sql.Literal(schema),
+                    tablename=sql.Literal(name))
         table_def = cls(schema=schema,
                         name=name,
                         columns=[])
         with conn.cursor() as curs:
             curs.execute(get_sql)
-            for column, type, encoding, distkey, sortkey, notnull in curs.fetchall():
+            for column, column_type, encoding, distkey, sortkey, notnull in curs.fetchall():
                 table_def.add_column(
                     RedshiftTableColumn(
                         name=column,
-                        type=type,
+                        column_type=RedshiftSchematic().get_type_from_string(column_type),
                         encoding=encoding,
                         distkey=distkey,
                         sortkey=sortkey,
@@ -581,3 +642,20 @@ class RedshiftSchematic(schematic.Schematic):
     MAX_CHAR_BYTES = 65535
     null_strings = DEFAULT_NULL_STRINGS
     # TODO: BOOL -> BIGINT -> DOUBLE -> VARCHAR
+
+    def get_type_from_string(self, type_string):
+        """Get the RedshiftTableColumnType instance from
+        a type string of the format that's in pg_table_def.
+
+        Args:
+          type_string: the string from pg_table_def
+        Returns:
+          A RedshiftTableColumnType instance
+        """
+        for column_type in self.column_types():
+            try:
+                return column_type().from_pg_table_def(type_string)
+            except ValueError:
+                continue
+        raise ValueError(
+            "No RedshiftTableColumnType matches {}".format(type_string))
