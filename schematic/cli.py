@@ -21,8 +21,19 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import click
+from schematic.schematics import redshift_schematic, csv_schematic
 
 
 @click.group()
 def cli():
     """Utilities for converting data for tranfer among different data warehouse solutions"""
+
+
+@cli.command()
+@click.argument("csv", type=click.Path(exists=True))
+def get_create_sql(csv):
+    """Get the table create sql for a given CSV"""
+    with open(csv) as csv_file:
+        click.echo(
+            redshift_schematic.from_rows(
+                csv_schematic.from_csv(csv_file).get_rows).create_sql())

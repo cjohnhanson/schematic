@@ -89,6 +89,17 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
         self.primary_key = primary_key
         self.unique = unique
 
+    def create_sql(self):
+        """psycopg2.sql for this column in a CREATE TABLE statement
+
+        Returns:
+           A psycopg2.sql object
+        """
+        return sql.SQL("{name} {column_type}").format(
+            name=sql.Identifier(
+                self.name), column_type=sql.SQL(
+                self.column_type.to_sql()))
+
 
 class RedshiftTableColumnType(schematic.TableColumnType):
     """Base class for all Redshift-specific TableColumnType
@@ -595,7 +606,18 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         """
         if not self.columns:
             raise schematic.NoColumnsError
-        raise NotImplementedError("TODO")
+        columns_sql = sql.SQL(",").join(
+            [col.create_sql() for col in self.columns])
+        distkey_sql = sql.SQL("DISTKEY ({col})").format(
+            col=sql.Identifier(self.distkey.name)) if self.distkey else sql.SQL("")
+        sortkey_sql = sql.SQL("SORTKEY ({col})").format(col=sql.SQL(",").join(
+            [sql.Identifier(column.name) for column in self.columns]))
+        return sql.SQL("""CREATE TABLE {name}
+        ({columns})
+        {distkey} {sortkey};""").format(name=sql.Identifier(self.name),
+                                        columns=columns_sql,
+                                        distkey=distkey_sql,
+                                        sortkey=sortkey_sql)
 
     def create_table(self, conn):
         """Create the table based on this
