@@ -32,7 +32,7 @@ class NoColumnsError(Exception):
     pass
 
 
-class NameSqlMixin(object):
+class NameSqlMixin():
     """Mixin to provide default to_sql behavior."""
 
     def to_sql(self):
@@ -44,7 +44,7 @@ class NameSqlMixin(object):
         return self.name
 
 
-class DictableMixin(object):
+class DictableMixin():
     """Mixin to provide marshaling to and from dict"""
 
     def to_dict(self):

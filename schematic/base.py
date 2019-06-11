@@ -28,7 +28,7 @@ from queue import Queue
 from schematic import NameSqlMixin, DictableMixin
 
 
-class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
+class TableColumnType(ABC, NameSqlMixin, DictableMixin):
     """Represents a type for a table column.
 
     The "size" of two different column types can be compared using
@@ -47,6 +47,7 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
       parameter: Instance parameter for this class. E.g., '256' for a VARCHAR(256)
 
     TODO(Cody): Comparisons of incomparable operands should raise an exception
+    TODO(Cody): Factor out the "most to least restrictive" iterator logic into a method on this class.
     """
     name = "TableColumnType"
     next_less_restrictive = None
@@ -167,7 +168,7 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
             return cls()
 
 
-class TableColumn(ABC, DictableMixin, NameSqlMixin, object):
+class TableColumn(ABC, DictableMixin, NameSqlMixin):
     """DB-agnostic base class for storing info about a column in a table.
 
     Attributes:
@@ -190,7 +191,7 @@ class TableColumn(ABC, DictableMixin, NameSqlMixin, object):
             other)) and self.name == other.name and self.column_type == other.column_type
 
 
-class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
+class TableDefinition(ABC, DictableMixin, NameSqlMixin):
     """DB-agnostic base class for storing info about a table
 
     Attributes:
@@ -284,7 +285,7 @@ class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
         raise NotImplementedError
 
 
-class Schematic(ABC, DictableMixin, object):
+class Schematic(ABC, DictableMixin):
     """Interface for implementation specifics for a type of database or warehouse.
 
     The TableColumnTypes in a given schematic form a tree with the most
