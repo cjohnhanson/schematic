@@ -70,6 +70,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
       notnull: Whether or not this column has a NOT NULL constraint.
       primary_key: Optimization hint for Redshift query planner, boolean
       unique: Optimization hint for Redshift query planner, boolean
+    TODO(Cody): Implement the actual logic and create_sql for column constraints.
     """
 
     def __init__(self,
