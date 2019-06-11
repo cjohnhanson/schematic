@@ -270,6 +270,14 @@ class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
         """
         raise NotImplementedError
 
+    @classmethod
+    def from_source(cls, args, **kwargs):
+        """Instantiate from an implementation-specific source (e.g., a CSV file or a DB connection
+        
+        Raises:
+          NotImplementedError: Subclasses should implement this.
+        """
+        raise NotImplementedError
 
 class Schematic(ABC, DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.

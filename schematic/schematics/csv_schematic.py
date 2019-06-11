@@ -81,7 +81,7 @@ class CSVTableDefinition(schematic.TableDefinition):
             yield(tuple(line))
 
     @classmethod
-    def from_csv(cls, csv_file):
+    def from_source(cls, csv_file):
         """Instantiate a CSVTableDefinition from a csv file
         Args:
           csv_file: an IO object with the CSV data

@@ -552,7 +552,7 @@ class RedshiftTableDefinition(schematic.TableDefinition):
             self.sortkeys.append(sk_dict[sk])
 
     @classmethod
-    def from_connection(cls, conn, schema, name):
+    def from_source(cls, conn, schema, name):
         """Instantiate from a redshift connection"
 
         Args:

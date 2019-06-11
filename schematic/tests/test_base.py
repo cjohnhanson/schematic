@@ -111,6 +111,9 @@ class MockTableColumnTypeParameterized(schematic.TableColumnType):
 class MockTableDefinitionClass(schematic.TableDefinition):
     pass
 
+class MockTableDefinitionClassA(schematic.TableDefinition):
+    pass
+
 
 class MockSchematic(schematic.Schematic):
     name = "MockSchematic"
@@ -241,7 +244,7 @@ class TestTableDefinitionMethods(unittest.TestCase):
 
     def test_eq_returns_false_different_type(self):
         self.assertFalse(
-            schematic.TableDefinition(
+            MockTableDefinitionClassA(
                 "TestTableDefinition",
                 []) == MockTableDefinitionClass(
                 "TestTableDefinition",

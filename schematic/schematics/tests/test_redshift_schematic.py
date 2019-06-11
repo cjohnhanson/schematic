@@ -160,8 +160,8 @@ class TestRedshiftTableDefinitionMethods(unittest.TestCase):
                                          RedshiftDateType(),
                                          distkey=True)])
 
-    def test_can_instantiate_from_connection(self):
-        table_def = RedshiftTableDefinition.from_connection(
+    def test_can_instantiate_from_source(self):
+        table_def = RedshiftTableDefinition.from_source(
             self.conn, "mock", "all_columns")
         self.assertEqual(table_def, self.mock_table_all_columns)
 
@@ -450,7 +450,7 @@ class TestRedshiftSchematic(unittest.TestCase):
             RedshiftSchematic().get_type(
                 "12",
                 previous_type=RedshiftBooleanType()),
-            RedshiftBigIntType)
+            RedshiftBigIntType())
 
     def test_get_type_returns_float_previous_type_smallint(self):
         self.assertEqual(

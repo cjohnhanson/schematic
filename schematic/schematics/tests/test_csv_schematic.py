@@ -49,21 +49,21 @@ class TestCSVTableColumnMethods(unittest.TestCase):
 
 class TestCSVTableDefinitionMethods(unittest.TestCase):
 
-    def test_from_csv(self):
+    def test_from_source(self):
         mock_csv_table_def = csv_schematic.CSVTableDefinition("testing")
         for column in TEST_CSV_FILE.readline().split(','):
-            mock_csv_table_def.add_column(csv_schematic.CSVTableColumn(column))
+            mock_csv_table_def.add_column(csv_schematic.CSVTableColumn(column.strip()))
         TEST_CSV_FILE.seek(0)
         self.assertEqual(
             mock_csv_table_def,
-            csv_schematic.CSVTableDefinition.from_csv(TEST_CSV_FILE))
+            csv_schematic.CSVTableDefinition.from_source(TEST_CSV_FILE))
 
     def test_get_rows_yields_rows(self):
         TEST_CSV_FILE.readline()
         rows1 = [tuple(l.strip().split(","))
                  for l in TEST_CSV_FILE.readlines()]
         TEST_CSV_FILE.seek(0)
-        csv_table_def = csv_schematic.CSVTableDefinition.from_csv(
+        csv_table_def = csv_schematic.CSVTableDefinition.from_source(
             TEST_CSV_FILE)
         rows2 = [row for row in csv_table_def.get_rows()]
         self.assertEqual(rows1, rows2)
