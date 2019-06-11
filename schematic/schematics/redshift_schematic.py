@@ -236,16 +236,18 @@ class RedshiftAbstractDatetimeType(RedshiftTableColumnType):
         """
         return bool(self.valid_regex.match(value))
 
+
 class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
     """A Timestamp with time zone type in Redshift"""
     name = "RedshiftTimestampTZType"
     next_less_restrictive = RedshiftVarcharType
     parameterized = False
     def_regex = re.compile(r"timestamp with time zone")
-    valid_regex = re.compile("^(({vdp})({vtp})({vtzp}))|({vdp})({vtp})$".format(
-        vdp=VALID_DATE_PATTERN,
-        vtp=VALID_TIME_PATTERN,
-        vtzp=VALID_TIMEZONE_PATTERN))
+    valid_regex = re.compile(
+        "^(({vdp})({vtp})({vtzp}))|({vdp})({vtp})$".format(
+            vdp=VALID_DATE_PATTERN,
+            vtp=VALID_TIME_PATTERN,
+            vtzp=VALID_TIMEZONE_PATTERN))
 
     def __init__(self):
         super(RedshiftTimestampTZType, self).__init__()
@@ -268,6 +270,7 @@ class RedshiftTimestampType(RedshiftAbstractDatetimeType):
 
     def to_sql(self):
         return sql.SQL("TIMESTAMP")
+
 
 class RedshiftDateType(RedshiftAbstractDatetimeType):
     """A DATE type in Redshift"""
@@ -303,7 +306,7 @@ class RedshiftAbstractDecimalType(RedshiftTableColumnType):
             split_at_decimal.append("")
         return (len("".join(split_at_decimal)),
                 len(split_at_decimal[1]))
-    
+
     def check_compatible(self,
                          value,
                          precision=None,
@@ -544,7 +547,8 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         for col in columns:
             if col.distkey:
                 if self.distkey:
-                    raise ValueError("RedshiftTableDefinition instantiated with multiple distkeys")
+                    raise ValueError(
+                        "RedshiftTableDefinition instantiated with multiple distkeys")
                 self.distkey = col
             if col.sortkey:
                 sk_dict[col.sortkey] = col

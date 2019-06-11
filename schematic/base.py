@@ -27,8 +27,10 @@ from csv import DictReader
 from queue import Queue
 from schematic import NameSqlMixin, DictableMixin
 
+
 class ColumnTypeNotFoundError(Exception):
     pass
+
 
 class TableColumnType(ABC, NameSqlMixin, DictableMixin):
     """Represents a type for a table column.
@@ -48,6 +50,7 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
 
     TODO(Cody): Comparisons of incomparable operands should raise an exception
     TODO(Cody): Factor out the "most to least restrictive" iterator logic into a method on this class.
+    TODO(Cody): Change the "parameter" attribute to use **kwargs.
     """
     name = "TableColumnType"
     next_less_restrictive = None
@@ -83,8 +86,6 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
             if nlr == self:
                 return True
         return False
-        
-
 
     def get_depth(self):
         """Get the distance between this TableColumnType
