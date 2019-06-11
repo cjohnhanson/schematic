@@ -534,9 +534,11 @@ class RedshiftBooleanType(RedshiftTableColumnType):
 
 
 class RedshiftTableDefinition(schematic.TableDefinition):
-    """Redshift-specific implementation of TableDefinition"""
+    """Redshift-specific implementation of TableDefinition
+    TODO(Cody): Support different types of diststyles and sortkeys
+    """
 
-    def __init__(self, schema, name, columns):
+    def __init__(self, schema, name, columns, diststyle=None):
         self.schema = schema
         self.tablename = name
         self.name = "{}.{}".format(schema, name)
