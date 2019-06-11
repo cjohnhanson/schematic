@@ -31,13 +31,13 @@ from schematic import NameSqlMixin, DictableMixin
 class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
     """Represents a type for a table column.
 
-    The restrictivity of two different column types can be compared using
+    The "size" of two different column types can be compared using
     the built in comparison operators. For two TableColumnTypes, A and B,
-    if A is less restrictive than B, then A < B evaluates to True.
+    if A is a superset of B, then A > B evaluates to True.
 
     Note that TableColumnTypes are only fully comparable when in the
     same subtree. If A is not found when traversing next_less_restrictive
-    in B and vice versa, A > B, A < B, and A == B all evaluate to False.
+    in B and vice versa, A < B, A > B, and A == B will all return False
 
     Attributes:
       name: The name of the type
@@ -72,15 +72,17 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
             other, type(self)) and other.parameter == self.parameter
 
     def __lt__(self, other):
+        return other > self
+
+    def __gt__(self, other):
         nlr = other
         while nlr:
             nlr = nlr.next_less_restrictive() if nlr.next_less_restrictive else None
             if nlr == self:
                 return True
         return False
+        
 
-    def __gt__(self, other):
-        return other < self
 
     def get_depth(self):
         """Get the distance between this TableColumnType

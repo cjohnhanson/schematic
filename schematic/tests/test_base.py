@@ -129,23 +129,23 @@ class TestTableColumnTypeMethods(unittest.TestCase):
     Test all the methods for the base TableColumnType class
     """
 
-    def test_lt_returns_true_when_less_restrictive(self):
-        self.assertTrue(MockTableColumnType1() < MockTableColumnType8())
+    def test_lt_returns_false_when_less_restrictive(self):
+        self.assertFalse(MockTableColumnType1() < MockTableColumnType8())
 
-    def test_lt_returns_false_when_false_when_more_restrictive(self):
-        self.assertFalse(MockTableColumnType8() < MockTableColumnType1())
+    def test_lt_returns_true_when_false_when_more_restrictive(self):
+        self.assertTrue(MockTableColumnType8() < MockTableColumnType1())
 
     def test_lt_returns_false_when_false_when_not_in_same_linked_list(self):
         self.assertFalse(MockTableColumnType8() < MockTableColumnType7())
 
-    def test_gt_returns_true_when_more_restrictive(self):
-        self.assertTrue(MockTableColumnType8() > MockTableColumnType1())
+    def test_gt_returns_true_when_less_restrictive(self):
+        self.assertTrue(MockTableColumnType8() < MockTableColumnType1())
 
-    def test_gt_returns_false_when_less_restrictive(self):
-        self.assertFalse(MockTableColumnType1() > MockTableColumnType8())
+    def test_gt_returns_false_when_more_restrictive(self):
+        self.assertFalse(MockTableColumnType1() < MockTableColumnType8())
 
     def test_gt_returns_false_when_not_in_same_linked_list(self):
-        self.assertFalse(MockTableColumnType8() > MockTableColumnType7())
+        self.assertFalse(MockTableColumnType8() < MockTableColumnType7())
 
     def test_instantiation_with_parameter_raises_valueerror_non_parameterized(
             self):
