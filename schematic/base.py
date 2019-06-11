@@ -215,7 +215,7 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
     def __repr__(self):
         return "{}: [{}]".format(self.name, ",".join(
             [str(col) for col in self.columns]))
-
+        
     def create_table(self, *args, **kwargs):
         """Create the table in the destination
             specified in *args and **kwargs
@@ -254,6 +254,10 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
             "No such column name {} in {}".format(
                 column.name, self.name))
 
+    def column_names(self):
+        """Get a list of column names for this table."""
+        return [col.name for col in self.columns]
+
     def get_rows(self, *args, **kwargs):
         """Generator for rows of the table described by this TableDefinition.
 
@@ -281,6 +285,7 @@ class Schematic(DictableMixin, object):
     name = 'schematic'
     most_restrictive_types = []
     table_definition_class = TableDefinition
+    column_class = TableColumn
     null_strings = []
 
     def get_distance_from_leaf_node(self, column_type):
@@ -363,6 +368,22 @@ class Schematic(DictableMixin, object):
         """
         raise NotImplementedError
 
+
+    def table_def_from_rows(self, name, fieldnames, rows):
+        """Instantiate a TableDefinition from an iterator of rows.
+        
+        Args:
+          fieldnames: The names of the columns for this table
+          rows: An array of arrays, each of which contains values for the fields in fieldnames
+        """
+        column_types = [None]*len(fieldnames)
+        for row in rows:
+            for idx, value in enumerate(row):
+                column_types[idx] = self.get_type(value, previous_type=column_types[idx])
+        table_def = self.table_definition_class(name, [])
+        for idx, fieldname in enumerate(fieldnames):
+            table_def.add_column(self.column_class(fieldname, column_types[idx]))
+        return table_def
 
 def _get_subclasses_helper(schematic_class):
     """Get all the subclasses of the given class.
