@@ -497,14 +497,14 @@ class TestRedshiftSchematic(unittest.TestCase):
             RedshiftSchematic().get_type(
                 "2019-06-22T15:01:24.943",
                 previous_type=RedshiftDateType()),
-            RedshiftTimestampType())
+            RedshiftTimestampTZType())
 
-    def test_get_type_returns_timestamp_previous_type_timestamptz(self):
+    def test_get_type_returns_timestamptz_previous_type_timestamp(self):
         self.assertEqual(
             RedshiftSchematic().get_type(
-                "2019-06-22T11:45:12 PM",
-                previous_type=RedshiftTimestampTZType()),
-            RedshiftTimestampType())
+                "2019-06-22T11:45:12 PM+08:00:00",
+                previous_type=RedshiftTimestampType()),
+            RedshiftTimestampTZType())
 
     def test_get_type_from_string_returns_varchar(self):
         self.assertEqual(

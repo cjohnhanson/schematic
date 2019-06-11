@@ -27,6 +27,8 @@ from csv import DictReader
 from queue import Queue
 from schematic import NameSqlMixin, DictableMixin
 
+class ColumnTypeNotFoundError(Exception):
+    pass
 
 class TableColumnType(ABC, NameSqlMixin, DictableMixin):
     """Represents a type for a table column.
@@ -318,6 +320,8 @@ class Schematic(ABC, DictableMixin):
                 else:
                     distance += 1
                     nlr = nlr.next_less_restrictive
+        if not distances:
+            raise ColumnTypeNotFoundError
         return min(distances)
 
     def get_type(self, value, previous_type=None):

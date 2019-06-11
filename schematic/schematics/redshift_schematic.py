@@ -236,11 +236,28 @@ class RedshiftAbstractDatetimeType(RedshiftTableColumnType):
         """
         return bool(self.valid_regex.match(value))
 
+class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
+    """A Timestamp with time zone type in Redshift"""
+    name = "RedshiftTimestampTZType"
+    next_less_restrictive = RedshiftVarcharType
+    parameterized = False
+    def_regex = re.compile(r"timestamp with time zone")
+    valid_regex = re.compile("^(({vdp})({vtp})({vtzp}))|({vdp})({vtp})$".format(
+        vdp=VALID_DATE_PATTERN,
+        vtp=VALID_TIME_PATTERN,
+        vtzp=VALID_TIMEZONE_PATTERN))
+
+    def __init__(self):
+        super(RedshiftTimestampTZType, self).__init__()
+
+    def to_sql(self):
+        return sql.SQL("TIMESTAMPTZ")
+
 
 class RedshiftTimestampType(RedshiftAbstractDatetimeType):
     """A timestamp type in Redshift"""
     name = "RedshiftTimestampType"
-    next_less_restrictive = RedshiftVarcharType
+    next_less_restrictive = RedshiftTimestampTZType
     parameterized = False
     def_regex = re.compile(r"timestamp without time zone")
     valid_regex = re.compile("^({})({})$".format(VALID_DATE_PATTERN,
@@ -251,24 +268,6 @@ class RedshiftTimestampType(RedshiftAbstractDatetimeType):
 
     def to_sql(self):
         return sql.SQL("TIMESTAMP")
-
-
-class RedshiftTimestampTZType(RedshiftAbstractDatetimeType):
-    """A Timestamp with time zone type in Redshift"""
-    name = "RedshiftTimestampTZType"
-    next_less_restrictive = RedshiftTimestampType
-    parameterized = False
-    def_regex = re.compile(r"timestamp with time zone")
-    valid_regex = re.compile("^({})({})({})$".format(VALID_DATE_PATTERN,
-                                                     VALID_TIME_PATTERN,
-                                                     VALID_TIMEZONE_PATTERN))
-
-    def __init__(self):
-        super(RedshiftTimestampTZType, self).__init__()
-
-    def to_sql(self):
-        return sql.SQL("TIMESTAMPTZ")
-
 
 class RedshiftDateType(RedshiftAbstractDatetimeType):
     """A DATE type in Redshift"""
