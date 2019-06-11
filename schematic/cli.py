@@ -21,6 +21,7 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 # SOFTWARE.
 import click
+import psycopg2
 from schematic.schematics import redshift_schematic, csv_schematic
 
 
@@ -30,10 +31,22 @@ def cli():
 
 
 @cli.command()
+@click.option("--schema")
 @click.argument("csv", type=click.Path(exists=True))
-def get_create_sql(csv):
-    """Get the table create sql for a given CSV"""
+@click.option("--conn-string", help="psycopg2-style connection string")
+def create_table(schema, csv, conn_string):
+    """Create a table from a CSV"""
     with open(csv) as csv_file:
-        click.echo(
-            redshift_schematic.from_rows(
-                csv_schematic.from_csv(csv_file).get_rows).create_sql())
+        csv_table_def = csv_schematic.CSVTableDefinition.from_csv(csv_file)
+        click.echo("Scanning CSV to determine types...")
+        redshift_table_def = redshift_schematic.RedshiftSchematic().table_def_from_rows(
+            schema=schema,
+            name=csv_table_def.name,
+            fieldnames=csv_table_def.column_names(),
+            rows=csv_table_def.get_rows())
+    click.echo("Creating table in Redshift...")
+    with psycopg2.connect(conn_string) as connection:
+        redshift_table_def.create_table(connection)
+        connection.commit()
+    click.secho("Successfully created table {}.{}".format(schema, csv_table_def.name),
+                    fg="green")

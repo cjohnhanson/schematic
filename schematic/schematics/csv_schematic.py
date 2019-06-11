@@ -78,7 +78,6 @@ class CSVTableDefinition(schematic.TableDefinition):
         reader = csv.reader(self.handler)
         next(reader)
         for line in reader:
-            print(line)
             yield(tuple(line))
 
     @classmethod
@@ -91,7 +90,7 @@ class CSVTableDefinition(schematic.TableDefinition):
         header = csv_file.readline()
         columns = []
         for column_name in header.split(","):
-            columns.append(CSVTableColumn(column_name))
+            columns.append(CSVTableColumn(column_name.strip()))
         csv_file.seek(0)
         return cls(name=path.basename(path.splitext(csv_file.name)[0]),
                    columns=columns,

@@ -22,12 +22,13 @@
 # SOFTWARE.
 import click
 from psycopg2 import sql
+from abc import ABC
 from csv import DictReader
 from queue import Queue
 from schematic import NameSqlMixin, DictableMixin
 
 
-class TableColumnType(NameSqlMixin, DictableMixin, object):
+class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
     """Represents a type for a table column.
 
     The restrictivity of two different column types can be compared using
@@ -162,7 +163,7 @@ class TableColumnType(NameSqlMixin, DictableMixin, object):
             return cls()
 
 
-class TableColumn(DictableMixin, NameSqlMixin, object):
+class TableColumn(ABC, DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a column in a table.
 
     Attributes:
@@ -172,20 +173,20 @@ class TableColumn(DictableMixin, NameSqlMixin, object):
 
     def __init__(self, name, column_type):
         self.name = name
-        self.type = column_type
+        self.column_type = column_type
 
     def __hash__(self):
-        return hash((self.name, self.type))
+        return hash((self.name, self.column_type))
 
     def __repr__(self):
-        return "{}: {}".format(self.name, self.type)
+        return "{}: {}".format(self.name, self.column_type)
 
     def __eq__(self, other):
         return isinstance(
-            self, type(other)) and self.name == other.name and self.type == other.type
+            self, type(other)) and self.name == other.name and self.column_type == other.column_type
 
 
-class TableDefinition(DictableMixin, NameSqlMixin, object):
+class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
     """DB-agnostic base class for storing info about a table
 
     Attributes:
@@ -270,7 +271,7 @@ class TableDefinition(DictableMixin, NameSqlMixin, object):
         raise NotImplementedError
 
 
-class Schematic(DictableMixin, object):
+class Schematic(ABC, DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.
 
     The TableColumnTypes in a given schematic form a tree with the most
@@ -369,18 +370,20 @@ class Schematic(DictableMixin, object):
         raise NotImplementedError
 
 
-    def table_def_from_rows(self, name, fieldnames, rows):
+    def table_def_from_rows(self, name, fieldnames, rows, **kwargs):
         """Instantiate a TableDefinition from an iterator of rows.
         
         Args:
+          name: The name of the table to create
           fieldnames: The names of the columns for this table
           rows: An array of arrays, each of which contains values for the fields in fieldnames
+          kwargs: implementation-specific keyword arguments to pass as part of instantiation
         """
         column_types = [None]*len(fieldnames)
         for row in rows:
             for idx, value in enumerate(row):
                 column_types[idx] = self.get_type(value, previous_type=column_types[idx])
-        table_def = self.table_definition_class(name, [])
+        table_def = self.table_definition_class(name=name, columns=[], **kwargs)
         for idx, fieldname in enumerate(fieldnames):
             table_def.add_column(self.column_class(fieldname, column_types[idx]))
         return table_def

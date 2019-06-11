@@ -81,7 +81,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
                  notnull=False,
                  primary_key=False,
                  unique=False):
-        super().__init__(name, column_type)
+        super().__init__(name, column_type=column_type)
         self.distkey = distkey
         self.sortkey = sortkey
         self.encoding = encoding
@@ -97,8 +97,7 @@ class RedshiftTableColumn(schematic.TableColumn, schematic.NameSqlMixin):
         """
         return sql.SQL("{name} {column_type}").format(
             name=sql.Identifier(
-                self.name), column_type=sql.SQL(
-                self.column_type.to_sql()))
+                self.name), column_type=self.column_type.to_sql())
 
 
 class RedshiftTableColumnType(schematic.TableColumnType):
@@ -127,6 +126,8 @@ class RedshiftTableColumnType(schematic.TableColumnType):
             return cls(parameter=search.group(1))
         else:
             return(cls())
+
+
 
 
 class RedshiftVarcharType(RedshiftTableColumnType):
@@ -536,6 +537,7 @@ class RedshiftTableDefinition(schematic.TableDefinition):
 
     def __init__(self, schema, name, columns):
         self.schema = schema
+        self.tablename = name
         self.name = "{}.{}".format(schema, name)
         self.columns = columns
         self.sortkeys = []
@@ -612,9 +614,10 @@ class RedshiftTableDefinition(schematic.TableDefinition):
             col=sql.Identifier(self.distkey.name)) if self.distkey else sql.SQL("")
         sortkey_sql = sql.SQL("SORTKEY ({col})").format(col=sql.SQL(",").join(
             [sql.Identifier(column.name) for column in self.columns]))
-        return sql.SQL("""CREATE TABLE {name}
+        return sql.SQL("""CREATE TABLE IF NOT EXISTS {schema}.{tablename}
         ({columns})
-        {distkey} {sortkey};""").format(name=sql.Identifier(self.name),
+        {distkey} {sortkey};""").format(schema=sql.Identifier(self.schema),
+                                        tablename=sql.Identifier(self.tablename),
                                         columns=columns_sql,
                                         distkey=distkey_sql,
                                         sortkey=sortkey_sql)
@@ -659,7 +662,8 @@ class RedshiftSchematic(schematic.Schematic):
     most_restrictive_types = [RedshiftVarcharType,
                               RedshiftBooleanType,
                               RedshiftDateType]
-    table_def = RedshiftTableDefinition
+    table_definition_class = RedshiftTableDefinition
+    column_class = RedshiftTableColumn
     MAX_VARCHAR_BYTES = 65535
     MAX_CHAR_BYTES = 65535
     null_strings = DEFAULT_NULL_STRINGS
