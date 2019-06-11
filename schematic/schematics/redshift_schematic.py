@@ -542,6 +542,8 @@ class RedshiftTableDefinition(schematic.TableDefinition):
         self.distkey = None
         for col in columns:
             if col.distkey:
+                if self.distkey:
+                    raise ValueError("RedshiftTableDefinition instantiated with multiple distkeys")
                 self.distkey = col
             if col.sortkey:
                 sk_dict[col.sortkey] = col
