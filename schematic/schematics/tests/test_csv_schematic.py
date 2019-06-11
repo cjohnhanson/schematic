@@ -52,7 +52,9 @@ class TestCSVTableDefinitionMethods(unittest.TestCase):
     def test_from_source(self):
         mock_csv_table_def = csv_schematic.CSVTableDefinition("testing")
         for column in TEST_CSV_FILE.readline().split(','):
-            mock_csv_table_def.add_column(csv_schematic.CSVTableColumn(column.strip()))
+            mock_csv_table_def.add_column(
+                csv_schematic.CSVTableColumn(
+                    column.strip()))
         TEST_CSV_FILE.seek(0)
         self.assertEqual(
             mock_csv_table_def,

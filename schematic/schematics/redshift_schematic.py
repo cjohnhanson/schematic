@@ -47,8 +47,8 @@ VALID_DATE_PATTERNS = [
     r"(yesterday)"]
 VALID_DATE_PATTERN = r"({})".format(r"|".join(VALID_DATE_PATTERNS))
 VALID_TIME_PATTERNS = [
-    r"((T| )(((([0-1][0-9])|(2[0-3])):([0-5][0-9])(:([0-5][0-9]))?(\.[0-9])*)))",
-    r"((T| )((0[1-9]|1[0-2]):([0-5][0-9])(:([0-5][0-9]))?(\.[0-9]*)? (AM|PM)))"
+    r"((T| )(((([0-1][0-9])|(2[0-3])):([0-5][0-9])(:([0-5][0-9]))?(\.([0-9])*))))",
+    r"((T| )((0[1-9]|1[0-2]):([0-5][0-9])(:([0-5][0-9]))?(\.([0-9]*))? (AM|PM)))"
 ]
 VALID_TIME_PATTERN = r"({})".format("|".join(VALID_TIME_PATTERNS))
 VALID_TIMEZONE_PATTERNS = [
@@ -126,8 +126,6 @@ class RedshiftTableColumnType(schematic.TableColumnType):
             return cls(parameter=search.group(1))
         else:
             return(cls())
-
-
 
 
 class RedshiftVarcharType(RedshiftTableColumnType):
@@ -616,11 +614,14 @@ class RedshiftTableDefinition(schematic.TableDefinition):
             [sql.Identifier(column.name) for column in self.columns]))
         return sql.SQL("""CREATE TABLE IF NOT EXISTS {schema}.{tablename}
         ({columns})
-        {distkey} {sortkey};""").format(schema=sql.Identifier(self.schema),
-                                        tablename=sql.Identifier(self.tablename),
-                                        columns=columns_sql,
-                                        distkey=distkey_sql,
-                                        sortkey=sortkey_sql)
+        {distkey} {sortkey};""").format(
+            schema=sql.Identifier(
+                self.schema),
+            tablename=sql.Identifier(
+                self.tablename),
+            columns=columns_sql,
+            distkey=distkey_sql,
+            sortkey=sortkey_sql)
 
     def create_table(self, conn):
         """Create the table based on this

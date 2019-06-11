@@ -111,6 +111,7 @@ class MockTableColumnTypeParameterized(schematic.TableColumnType):
 class MockTableDefinitionClass(schematic.TableDefinition):
     pass
 
+
 class MockTableDefinitionClassA(schematic.TableDefinition):
     pass
 
@@ -237,6 +238,14 @@ class TestTableDefinitionMethods(unittest.TestCase):
                 "TestColumn3", MockTableColumnType3())]
         self.table_definition = schematic.TableDefinition(
             "TestTableDefinition", columns)
+
+    def test_column_names(self):
+        self.assertEqual(["TestColumn1", "TestColumn2", "TestColumn3"],
+                         self.table_definition.column_names())
+
+    def test_from_source_raises_not_implemented(self):
+        with self.assertRaises(NotImplementedError):
+            self.table_definition.from_source("dummy", dummy="dummy")
 
     def test_repr_returns_correct_string(self):
         self.assertEqual(str(self.table_definition),

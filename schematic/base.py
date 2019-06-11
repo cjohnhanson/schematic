@@ -182,8 +182,8 @@ class TableColumn(ABC, DictableMixin, NameSqlMixin, object):
         return "{}: {}".format(self.name, self.column_type)
 
     def __eq__(self, other):
-        return isinstance(
-            self, type(other)) and self.name == other.name and self.column_type == other.column_type
+        return isinstance(self, type(
+            other)) and self.name == other.name and self.column_type == other.column_type
 
 
 class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
@@ -216,7 +216,7 @@ class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
     def __repr__(self):
         return "{}: [{}]".format(self.name, ",".join(
             [str(col) for col in self.columns]))
-        
+
     def create_table(self, *args, **kwargs):
         """Create the table in the destination
             specified in *args and **kwargs
@@ -271,13 +271,14 @@ class TableDefinition(ABC, DictableMixin, NameSqlMixin, object):
         raise NotImplementedError
 
     @classmethod
-    def from_source(cls, args, **kwargs):
+    def from_source(cls, *args, **kwargs):
         """Instantiate from an implementation-specific source (e.g., a CSV file or a DB connection
-        
+
         Raises:
           NotImplementedError: Subclasses should implement this.
         """
         raise NotImplementedError
+
 
 class Schematic(ABC, DictableMixin, object):
     """Interface for implementation specifics for a type of database or warehouse.
@@ -377,24 +378,29 @@ class Schematic(ABC, DictableMixin, object):
         """
         raise NotImplementedError
 
-
     def table_def_from_rows(self, name, fieldnames, rows, **kwargs):
         """Instantiate a TableDefinition from an iterator of rows.
-        
+
         Args:
           name: The name of the table to create
           fieldnames: The names of the columns for this table
           rows: An array of arrays, each of which contains values for the fields in fieldnames
           kwargs: implementation-specific keyword arguments to pass as part of instantiation
         """
-        column_types = [None]*len(fieldnames)
+        column_types = [None] * len(fieldnames)
         for row in rows:
             for idx, value in enumerate(row):
-                column_types[idx] = self.get_type(value, previous_type=column_types[idx])
-        table_def = self.table_definition_class(name=name, columns=[], **kwargs)
+                column_types[idx] = self.get_type(
+                    value, previous_type=column_types[idx])
+        table_def = self.table_definition_class(
+            name=name, columns=[], **kwargs)
         for idx, fieldname in enumerate(fieldnames):
-            table_def.add_column(self.column_class(fieldname, column_types[idx]))
+            table_def.add_column(
+                self.column_class(
+                    fieldname,
+                    column_types[idx]))
         return table_def
+
 
 def _get_subclasses_helper(schematic_class):
     """Get all the subclasses of the given class.
