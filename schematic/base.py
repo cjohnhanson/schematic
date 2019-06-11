@@ -45,6 +45,8 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin, object):
       name_regex: A Regex matching all strings which are a valid
                   string representation of this type
       parameter: Instance parameter for this class. E.g., '256' for a VARCHAR(256)
+
+    TODO(Cody): Comparisons of incomparable operands should raise an exception
     """
     name = "TableColumnType"
     next_less_restrictive = None
