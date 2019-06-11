@@ -292,6 +292,8 @@ class RedshiftAbstractDecimalType(RedshiftTableColumnType):
       scale: Total number of digits that can fit into a column of this type.
       precision: Number of digits to right of the decimal point that can
                  fit into a column of this type.
+    TODO(Cody): Update the logic for compatibility--it's not necessarily true
+    that being able to cast to float in python means that the value is a decimal.
     """
 
     @staticmethod
