@@ -42,8 +42,6 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
     Attributes:
       name: The name of the type
       next_less_restrictive: The TableColumnType which is next less restrictive
-      name_regex: A Regex matching all strings which are a valid
-                  string representation of this type
       parameter: Instance parameter for this class. E.g., '256' for a VARCHAR(256)
 
     TODO(Cody): Comparisons of incomparable operands should raise an exception
@@ -51,7 +49,6 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
     """
     name = "TableColumnType"
     next_less_restrictive = None
-    name_regex = None
     parameterized = False
 
     def __init__(self, parameter=None):

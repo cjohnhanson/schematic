@@ -295,6 +295,14 @@ class RedshiftAbstractDecimalType(RedshiftTableColumnType):
                  fit into a column of this type.
     """
 
+    @staticmethod
+    def get_parameter_for_value(value):
+        split_at_decimal = str(value).split(".")
+        if len(split_at_decimal) == 1:
+            split_at_decimal.append("")
+        return (len("".join(split_at_decimal)),
+                len(split_at_decimal[1]))
+    
     def check_compatible(self,
                          value,
                          precision=None,
@@ -319,11 +327,9 @@ class RedshiftAbstractDecimalType(RedshiftTableColumnType):
             float(value)
         except ValueError:
             return False
-        split_at_decimal = str(value).split(".")
-        if len(split_at_decimal) == 1:
-            split_at_decimal.append("")
-        return (len(split_at_decimal[1]) <= scale_to_check and
-                len("".join(split_at_decimal)) <= precision_to_check)
+        scale, precision = self.get_parameter_for_value(value)
+        return (scale <= scale_to_check and
+                precision <= precision_to_check)
 
 
 class RedshiftDecimalType(RedshiftAbstractDecimalType):
@@ -370,14 +376,6 @@ class RedshiftDecimalType(RedshiftAbstractDecimalType):
         return self.check_compatible(value,
                                      scale=self.max_scale,
                                      precision=self.max_precision)
-
-    @staticmethod
-    def get_parameter_for_value(value):
-        split_at_decimal = str(value).split(".")
-        if len(split_at_decimal) == 1:
-            split_at_decimal.append("")
-        return (len("".join(split_at_decimal)),
-                len(split_at_decimal[1]))
 
 
 class RedshiftDoublePrecisionType(RedshiftAbstractDecimalType):
@@ -462,7 +460,7 @@ class RedshiftAbstractIntType(RedshiftTableColumnType):
 class RedshiftBigIntType(RedshiftAbstractIntType):
     """An bigint type in Redshift"""
     name = "RedshiftBigIntType"
-    next_less_restrictive = RedshiftRealType
+    next_less_restrictive = RedshiftDoublePrecisionType
     min_value = -9223372036854775808
     max_value = 9223372036854775807
     def_regex = re.compile(r"bigint")

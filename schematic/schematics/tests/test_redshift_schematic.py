@@ -457,7 +457,7 @@ class TestRedshiftSchematic(unittest.TestCase):
             RedshiftSchematic().get_type(
                 "-943.1",
                 previous_type=RedshiftSmallIntType()),
-            RedshiftRealType())
+            RedshiftDoublePrecisionType())
 
     def test_get_type_returns_double_previous_type_float(self):
         self.assertEqual(
