@@ -70,7 +70,7 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
         if self.parameterized:
             return "{}({})".format(type(self), self.parameter)
         else:
-            return self.name
+            return '{}'.format(type(self))
 
     def __eq__(self, other):
         return isinstance(
