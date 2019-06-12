@@ -1,7 +1,7 @@
 kind: pipeline
 name: schematic
 steps:
-  - name: garage_test
+  - name: test
     image: python:3
     commands:
       - pip install requirements-dev.txt
