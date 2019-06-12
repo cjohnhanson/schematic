@@ -4,6 +4,7 @@ steps:
   - name: garage_test
     image: python3:latest
     commands:
+      - pip install requirements-dev.txt
       - pytest --cov=schematic --cov-fail-under=90
     when:
       event:
@@ -11,4 +12,3 @@ steps:
 trigger:
   event:
     - push
-    - pull_request
