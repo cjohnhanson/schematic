@@ -184,7 +184,7 @@ class TableColumn(ABC, DictableMixin, NameSqlMixin):
         return hash((self.name, self.column_type))
 
     def __repr__(self):
-        return "{}: {}".format(self.name, self.column_type)
+        return "TableColumn('{}', {})".format(self.name, repr(self.column_type))
 
     def __eq__(self, other):
         return isinstance(self, type(
