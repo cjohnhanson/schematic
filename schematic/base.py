@@ -68,7 +68,7 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
 
     def __repr__(self):
         if self.parameterized:
-            return "{} ({})".format(self.name, self.parameter)
+            return "{}({})".format(type(self), self.parameter)
         else:
             return self.name
 
