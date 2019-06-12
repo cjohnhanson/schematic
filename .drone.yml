@@ -4,6 +4,7 @@ steps:
   - name: test
     image: python:3
     commands:
+      - pip install /drone/src
       - pip install -r requirements-dev.txt
       - pytest --cov=schematic --cov-fail-under=90
     when:
