@@ -29,7 +29,7 @@ You can also get help for each subcommand.
 $ schematic create-table --help
 Usage: schematic create-table [OPTIONS] CSV
 
-  Create a table from a CSV
+  Create a Redshift table from a CSV
 
 Options:
   --schema TEXT
