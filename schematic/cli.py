@@ -35,7 +35,7 @@ def cli():
 @click.argument("csv", type=click.Path(exists=True))
 @click.option("--conn-string", help="psycopg2-style connection string")
 def create_table(schema, csv, conn_string):
-    """Create a table from a CSV"""
+    """Create a Redshift table from a CSV"""
     with open(csv) as csv_file:
         csv_table_def = csv_schematic.CSVTableDefinition.from_source(csv_file)
         click.echo("Scanning CSV to determine types...")
@@ -53,3 +53,4 @@ def create_table(schema, csv, conn_string):
             schema,
             csv_table_def.name),
         fg="green")
+

@@ -22,7 +22,7 @@ Options:
   --help  Show this message and exit.
 
 Commands:
-  create-table  Create a table from a CSV
+  create-table  Create a Redshift table from a CSV
 ```
 You can also get help for each subcommand.
 ```
