@@ -2,7 +2,9 @@
 # Schematic
 Schematic is a set of utilities for transforming data among different data warehousing solutions.
 
-It currently supports the creation of Redshift tables based on data in CSV files.
+It can infer a destination schema for arbitrary data from a source.
+
+In its current version, it supports Redshift and CSV.
 
 ## Installation
 Schematic is only supported for Python 3.5 and up.
