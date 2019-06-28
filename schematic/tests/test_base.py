@@ -240,6 +240,11 @@ class TestTableDefinitionMethods(unittest.TestCase):
         self.table_definition = schematic.TableDefinition(
             "TestTableDefinition", columns)
 
+    def test_init_raises_valueerror_duplicate_column(self):
+        with self.assertRaises(ValueError):
+            schematic.TableDefinition("TestDuplicateColumns",
+                                      self.table_definition.columns*2)
+        
     def test_column_names(self):
         self.assertEqual(["TestColumn1", "TestColumn2", "TestColumn3"],
                          self.table_definition.column_names())

@@ -167,7 +167,6 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
         else:
             return cls()
 
-
 class TableColumn(ABC, DictableMixin, NameSqlMixin):
     """DB-agnostic base class for storing info about a column in a table.
 
@@ -201,7 +200,10 @@ class TableDefinition(ABC, DictableMixin, NameSqlMixin):
 
     def __init__(self, name, columns):
         self.name = name
+        if len(frozenset([c.name for c in columns])) != len(columns):
+            raise ValueError("Cannot have multiple columns of same name in TableDefinition")
         self.columns = columns
+        
 
     def create_sql(self):
         """Generate a sql statement for creating a table based on this TableDefinition.
