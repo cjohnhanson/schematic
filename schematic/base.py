@@ -167,6 +167,7 @@ class TableColumnType(ABC, NameSqlMixin, DictableMixin):
         else:
             return cls()
 
+
 class TableColumn(ABC, DictableMixin, NameSqlMixin):
     """DB-agnostic base class for storing info about a column in a table.
 
@@ -183,7 +184,8 @@ class TableColumn(ABC, DictableMixin, NameSqlMixin):
         return hash((self.name, self.column_type))
 
     def __repr__(self):
-        return "TableColumn('{}', {})".format(self.name, repr(self.column_type))
+        return "TableColumn('{}', {})".format(
+            self.name, repr(self.column_type))
 
     def __eq__(self, other):
         return isinstance(self, type(
@@ -201,9 +203,9 @@ class TableDefinition(ABC, DictableMixin, NameSqlMixin):
     def __init__(self, name, columns):
         self.name = name
         if len(frozenset([c.name for c in columns])) != len(columns):
-            raise ValueError("Cannot have multiple columns of same name in TableDefinition")
+            raise ValueError(
+                "Cannot have multiple columns of same name in TableDefinition")
         self.columns = columns
-        
 
     def create_sql(self):
         """Generate a sql statement for creating a table based on this TableDefinition.
@@ -387,7 +389,13 @@ class Schematic(ABC, DictableMixin):
         """
         raise NotImplementedError
 
-    def table_def_from_rows(self, name, fieldnames, rows, **kwargs):
+    def table_def_from_rows(
+            self,
+            name,
+            fieldnames,
+            rows,
+            default_type=None,
+            **kwargs):
         """Instantiate a TableDefinition from an iterator of rows.
 
         Args:
@@ -404,6 +412,11 @@ class Schematic(ABC, DictableMixin):
         table_def = self.table_definition_class(
             name=name, columns=[], **kwargs)
         for idx, fieldname in enumerate(fieldnames):
+            if not column_types[idx]:
+                if not default_type:
+                    raise ValueError(
+                        f"{fieldname} has no values in source. Must provide default type.")
+                column_types[idx] = default_type
             table_def.add_column(
                 self.column_class(
                     fieldname,
