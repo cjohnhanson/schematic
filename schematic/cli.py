@@ -22,7 +22,6 @@
 # SOFTWARE.
 import click
 import psycopg2
-import smart_open as open
 from schematic.schematics import redshift_schematic, csv_schematic
 
 
